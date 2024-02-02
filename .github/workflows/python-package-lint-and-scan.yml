@@ -1,0 +1,34 @@
+---
+name: Lint and security scan for a Python package
+on:
+  workflow_call:
+    inputs:
+      package_root_path:
+        required: true
+        type: string
+        description: Path to search for files
+        default: .
+jobs:
+  lint-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install packages
+        run: |
+          pip install -U --no-cache-dir \
+            autopep8 bandit flake8 flake8-bugbear flake8-isort pep8-naming \
+            mypy ${{ inputs.package_root_path }}
+      - name: Validate the codes using flake8
+        run: |
+          flake8 --exclude=build ${{ inputs.package_root_path }}
+      - name: Validate the codes using Mypy
+        run: |
+          mypy --ignore-missing-imports --exclude=build \
+          ${{ inputs.package_root_path }}
+      - name: Find security issues using Bandit
+        run: |
+          bandit --exclude=build -r ${{ inputs.package_root_path }}

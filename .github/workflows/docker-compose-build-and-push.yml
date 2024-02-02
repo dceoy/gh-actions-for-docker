@@ -1,16 +1,13 @@
 ---
-name: CI to Docker Hub
+name: Docker image build and push to Docker Hub using docker-compose
 on:
   workflow_call:
     secrets:
       DOCKER_USER:
         required: true
-        type: string
         description: Docker Hub username
-        default: ${{ github.actor }}
       DOCKER_TOKEN:
         required: true
-        type: string
         description: Docker Hub token
 jobs:
   build-and-push:
