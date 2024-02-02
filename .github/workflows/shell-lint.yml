@@ -1,0 +1,22 @@
+---
+name: Lint for Shell
+on:
+  workflow_call:
+    inputs:
+      file-paths:
+        required: false
+        type: string
+        description: Paths to shell scripts
+        default: .
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install --no-install-recommends --no-install-suggests shellcheck
+      - name: Execute shellcheck
+        run: |
+          shellcheck ${{ inputs.file-paths }}

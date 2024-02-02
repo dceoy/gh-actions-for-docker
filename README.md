@@ -16,3 +16,4 @@ Reusable workflows
   - json-lint.yml
   - python-package-lint-and-scan.yml
   - python-package-release-on-pypi-and-github.yml
+  - shell-lint.yml
