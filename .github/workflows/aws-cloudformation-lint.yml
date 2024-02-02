@@ -1,0 +1,37 @@
+---
+name: Lint for AWS CloudFormation
+on:
+  workflow_call:
+    inputs:
+      directory:
+        required: true
+        type: string
+        description: Directory to search for files
+        default: .
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - name: Install commands
+        run: |
+          python -m pip install --upgrade --no-cache-dir cfn-lint yamllint
+          npm install -g jsonlint
+      - name: Execute jsonlint
+        run: |
+          find {{ inputs.directory }} -type f -name '*.json' \
+            | xargs -t jsonlint -q
+      - name: Execute yamllint
+        run: |
+          find {{ inputs.directory }} -type f -name '*.yml' -o -name '*.yaml' \
+            | xargs -t yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
+      - name: Execute cfn-lint
+        run: |
+          find {{ inputs.directory }} -type f -name '*.cfn.yml' -o -name '*.cfn.yaml' \
+            | xargs -t cfn-lint --template

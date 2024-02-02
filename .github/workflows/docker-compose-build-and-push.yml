@@ -5,8 +5,13 @@ on:
     secrets:
       DOCKER_USER:
         required: true
+        type: string
+        description: Docker Hub username
+        default: ${{ github.actor }}
       DOCKER_TOKEN:
         required: true
+        type: string
+        description: Docker Hub token
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
