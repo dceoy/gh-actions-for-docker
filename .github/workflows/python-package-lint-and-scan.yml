@@ -36,10 +36,13 @@ jobs:
         run: >
           pip install -U --no-cache-dir
           autopep8 bandit flake8 flake8-bugbear flake8-isort pep8-naming mypy
-          ${{ inputs.package-root-path }}
+          ruff ${{ inputs.package-root-path }}
       - name: Validate the codes using flake8
         run: >
           flake8 --exclude=build ${{ inputs.package-root-path }}
+      - name: Validate the codes using ruff
+        run: >
+          ruff check --exclude=build ${{ inputs.package-root-path }}
       - name: Validate the codes using Mypy
         run: >
           mypy ${{ inputs.mypy-add-options }} --exclude=build

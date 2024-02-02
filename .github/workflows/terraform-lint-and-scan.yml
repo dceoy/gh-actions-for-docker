@@ -30,7 +30,7 @@ jobs:
           terraform fmt -recursive -check ${{ inputs.search-path }}
       - name: Execute tflint
         run: |
-          tflint --recursive ${{ inputs.search-path }}
+          tflint --recursive --filter ${{ inputs.search-path }}
       - name: Execute tfsec
         run: |
           tfsec ${{ inputs.search-path }}
