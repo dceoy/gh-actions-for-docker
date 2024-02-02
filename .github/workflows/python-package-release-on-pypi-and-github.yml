@@ -6,6 +6,12 @@ on:
       PYPI_API_TOKEN:
         required: true
         description: PyPI API token
+    inputs:
+      python-version:
+        required: false
+        type: string
+        description: Python version to use
+        default: 3.x
 jobs:
   build:
     name: Build the Python 🐍 distribution 📦
@@ -15,10 +21,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ inputs.python-version }}
       - name: Install pypa/build
         run: |
-          python3 -m pip install --upgrade --no-cache-dir build
+          python3 -m pip install -U --no-cache-dir build
       - name: Read the project name
         run: |
           cat << EOF | python3  >> $GITHUB_OUTPUT

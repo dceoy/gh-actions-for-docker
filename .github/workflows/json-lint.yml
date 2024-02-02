@@ -3,11 +3,16 @@ name: Lint for JSON
 on:
   workflow_call:
     inputs:
-      search_path:
-        required: true
+      search-path:
+        required: false
         type: string
         description: Path to search for files
         default: .
+      node-version:
+        required: false
+        type: string
+        description: Node.js version to use
+        default: latest
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,11 +20,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: ${{ inputs.node-version }}
       - name: Install jsonlint
         run: |
           npm install -g jsonlint
       - name: Execute jsonlint
         run: |
-          find ${{ inputs.search_path }} -type f -name '*.json' \
+          find ${{ inputs.search-path }} -type f -name '*.json' \
             | xargs -t jsonlint -q

@@ -3,11 +3,16 @@ name: Lint for YAML
 on:
   workflow_call:
     inputs:
-      search_path:
-        required: true
+      search-path:
+        required: false
         type: string
         description: Path to search for files
         default: .
+      python-version:
+        required: false
+        type: string
+        description: Python version to use
+        default: 3.x
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,14 +20,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ inputs.python-version }}
       - uses: actions/setup-node@v4
         with:
           node-version: latest
       - name: Install yamllint
         run: |
-          python -m pip install --upgrade --no-cache-dir yamllint
+          python -m pip install -U --no-cache-dir yamllint
       - name: Execute yamllint
         run: |
-          find ${{ inputs.search_path }} -type f -name '*.yml' -o -name '*.yaml' \
+          find ${{ inputs.search-path }} -type f -name '*.yml' -o -name '*.yaml' \
             | xargs -t yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'

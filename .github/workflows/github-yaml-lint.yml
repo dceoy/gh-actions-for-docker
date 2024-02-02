@@ -12,4 +12,5 @@ jobs:
   lint:
     uses: ./.github/workflows/yaml-lint.yml
     with:
-      search_path: .github/
+      search-path: .github/
+      python-version: 3.x

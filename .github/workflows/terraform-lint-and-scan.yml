@@ -3,27 +3,34 @@ name: Lint and security scan for Terraform
 on:
   workflow_call:
     inputs:
-      search_path:
-        required: true
+      search-path:
+        required: false
         type: string
         description: Path to search for files
         default: .
+      terraform-version:
+        required: false
+        type: string
+        description: Terraform version to use
+        default: latest
 jobs:
   lint-and-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform-version: ${{ inputs.terraform-version }}
       - name: Install tflint and tfsec
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
           curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
       - name: Execute terraform fmt
         run: |
-          terraform fmt -recursive -check ${{ inputs.search_path }}
+          terraform fmt -recursive -check ${{ inputs.search-path }}
       - name: Execute tflint
         run: |
-          tflint --recursive ${{ inputs.search_path }}
+          tflint --recursive ${{ inputs.search-path }}
       - name: Execute tfsec
         run: |
-          tfsec ${{ inputs.search_path }}
+          tfsec ${{ inputs.search-path }}

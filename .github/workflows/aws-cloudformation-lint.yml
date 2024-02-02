@@ -3,11 +3,16 @@ name: Lint for AWS CloudFormation
 on:
   workflow_call:
     inputs:
-      search_path:
-        required: true
+      search-path:
+        required: false
         type: string
         description: Path to search for files
         default: .
+      python-version:
+        required: false
+        type: string
+        description: Python version to use
+        default: 3.x
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,15 +20,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ inputs.python-version }}
       - name: Install cfn-lint and yamllint
         run: |
-          python -m pip install --upgrade --no-cache-dir cfn-lint yamllint
+          python -m pip install -U --no-cache-dir cfn-lint yamllint
       - name: Execute yamllint
         run: |
-          find ${{ inputs.search_path }} -type f -name '*.yml' -o -name '*.yaml' \
+          find ${{ inputs.search-path }} -type f -name '*.yml' -o -name '*.yaml' \
             | xargs -t yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
       - name: Execute cfn-lint
         run: |
-          find ${{ inputs.search_path }} -type f -name '*.cfn.yml' -o -name '*.cfn.yaml' \
+          find ${{ inputs.search-path }} -type f -name '*.cfn.yml' -o -name '*.cfn.yaml' \
             | xargs -t cfn-lint --template
