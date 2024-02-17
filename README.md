@@ -9,11 +9,12 @@ Reusable workflows
 ------------------
 
 - .github/workflows/
-  - docker-compose-build-and-push.yml
   - aws-cloudformation-lint.yml
-  - terraform-lint-and-scan.yml
-  - yaml-lint.yml
+  - docker-compose-build-and-push.yml
   - json-lint.yml
   - python-package-lint-and-scan.yml
   - python-package-release-on-pypi-and-github.yml
+  - python-pyinstaller.yml
   - shell-lint.yml
+  - terraform-lint-and-scan.yml
+  - yaml-lint.yml

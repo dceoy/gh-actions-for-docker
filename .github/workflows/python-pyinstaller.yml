@@ -1,0 +1,59 @@
+---
+name: Build an executable file using PyInstaller
+on:
+  workflow_call:
+    inputs:
+      app-script-path:
+        required: true
+        type: string
+        description: Path to the Python script
+      pyinstaller-add-options:
+        required: false
+        type: string
+        description: Additional options for PyInstaller
+        default: --clean --noconsole --onefile
+      python-packages-to-install:
+        required: false
+        type: string
+        description: Python packages to install
+        default: null
+      runs-on:
+        required: false
+        type: string
+        description: The type of machine to run the job on
+        default: windows-latest
+      python-version:
+        required: false
+        type: string
+        description: Python version to use
+        default: 3.x
+      retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install PyInstaller
+        run: |
+          python -m pip install -U --no-cache-dir pip PyInstaller
+      - name: Install Python packages
+        if: ${{ inputs.python-packages-to-install != null }}
+        run: |
+          python -m pip install -U --no-cache-dir ${{ inputs.python-packages-to-install }}
+      - name: Build an executable file
+        run: |
+          python -m PyInstaller ${{ inputs.pyinstaller-add-options }} ${{ inputs.app-script-path }}
+      - name: Upload the artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyinstaller-distributions
+          path: dist
+          retention-days: ${{ inputs.retention-days }}
