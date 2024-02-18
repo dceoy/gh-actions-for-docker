@@ -1,7 +1,14 @@
 ---
-name: Docker image build and push to Docker Hub using docker-compose
+name: Docker image build and push using docker-compose
 on:
   workflow_call:
+    with:
+      inputs:
+        file:
+          required: false
+          type: string
+          description: Path to Docker Compose file
+          default: docker-compose.yml
     secrets:
       DOCKER_USER:
         required: true
@@ -25,5 +32,4 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build and push the image
         run: |
-          docker-compose build
-          docker-compose push
+          docker-compose -f ${{ github.event.inputs.file }} build --pull --push
