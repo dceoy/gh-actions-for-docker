@@ -10,7 +10,9 @@ Reusable workflows
 
 - .github/workflows/
   - aws-cloudformation-lint.yml
-  - docker-compose-build-and-push.yml
+  - docker-build-and-push.yml
+  - docker-build-and-save.yml
+  - docker-compose-build-and-save.yml
   - json-lint.yml
   - python-package-lint-and-scan.yml
   - python-package-release-on-pypi-and-github.yml
