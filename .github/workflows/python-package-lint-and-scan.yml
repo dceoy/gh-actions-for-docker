@@ -6,7 +6,7 @@ on:
       package-root-path:
         required: false
         type: string
-        description: Path to search for files
+        description: Path to the Python package
         default: .
       python-version:
         required: false
