@@ -16,6 +16,7 @@ Reusable workflows
   - python-package-release-on-pypi-and-github.yml
   - python-pyinstaller.yml
   - r-script-lint.yml
+  - r-package-lint.yml
   - shell-lint.yml
   - terraform-lint-and-scan.yml
   - yaml-lint.yml
