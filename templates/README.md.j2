@@ -1,0 +1,15 @@
+gh-actions-for-devops
+=====================
+
+GitHub Actions workflows for DevOps
+
+[![Lint and scan](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/local-lint-and-scan.yml/badge.svg)](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/local-lint-and-scan.yml)
+
+Reusable workflows
+------------------
+
+- .github/workflows/
+{% for f in workflows %}
+  - {{ f.file }}
+    - {{ f.name }}
+{% endfor %}
