@@ -43,6 +43,9 @@ Reusable workflows
   - shell-lint.yml
     - Lint for Shell
 
+  - terraform-format-and-pr.yml
+    - Formatter for Terraform
+
   - terraform-lint-and-scan.yml
     - Lint and security scan for Terraform
 

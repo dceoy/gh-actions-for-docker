@@ -56,13 +56,13 @@ jobs:
         run: >
           pip install -U --no-cache-dir flake8 ruff mypy bandit
           ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
-      - name: Lint codes using flake8
+      - name: Lint the codes using flake8
         run: >
           flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
-      - name: Lint codes using ruff
+      - name: Lint the codes using ruff
         run: >
           ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
-      - name: Lint codes using Mypy
+      - name: Lint the codes using Mypy
         run: >
           mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
       - name: Find security issues using Bandit

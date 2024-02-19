@@ -23,14 +23,14 @@ jobs:
           terraform-version: ${{ inputs.terraform-version }}
       - name: Install tflint and tfsec
         run: |
-          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-      - name: Execute terraform fmt
+          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+      - name: Lint the codes using terraform fmt
         run: |
           terraform fmt -recursive -check ${{ inputs.search-path }}
-      - name: Execute tflint
+      - name: Lint the codes using tflint
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
-      - name: Execute tfsec
+      - name: Find security issues using tfsec
         run: |
           tfsec ${{ inputs.search-path }}

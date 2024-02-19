@@ -61,22 +61,22 @@ jobs:
         shell: Rscript {0}
         run: |
           install.packages(pkgs = c('lintr', 'styler'), dependencies = TRUE, clean = TRUE)
-      - name: Format codes using styler::style_pkg()
+      - name: Format the codes using styler::style_pkg()
         if: ${{ inputs.format-package }}
         shell: Rscript {0}
         run: |
           styler::style_pkg(path = "${{ inputs.package-path }}")
-      - name: Format codes using styler::style_dir()
+      - name: Format the codes using styler::style_dir()
         if: ${{ ! inputs.format-package }}
         shell: Rscript {0}
         run: |
           styler::style_dir(path = "${{ inputs.package-path }}")
-      - name: Lint codes using lintr::lint_package()
+      - name: Lint the codes using lintr::lint_package()
         if: ${{ inputs.lint-before-pr && inputs.format-package }}
         shell: Rscript {0}
         run: |
           lintr::lint_package(path = "${{ inputs.package-path }}")
-      - name: Lint codes using lintr::lint_dir()
+      - name: Lint the codes using lintr::lint_dir()
         if: ${{ ! (inputs.lint-before-pr && inputs.format-package) }}
         shell: Rscript {0}
         run: |
