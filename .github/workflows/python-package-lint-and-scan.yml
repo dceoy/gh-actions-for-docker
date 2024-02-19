@@ -1,5 +1,5 @@
 ---
-name: Lint and security scan for a Python package
+name: Lint and security scan for Python
 on:
   workflow_call:
     inputs:
