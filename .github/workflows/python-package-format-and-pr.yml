@@ -22,21 +22,41 @@ on:
         required: false
         type: string
         description: Additional options to pass to ruff format
-        default: --exclude=build
+        default: --exclude=build --line-length=79
       black-options:
         required: false
         type: string
         description: Additional options to pass to black
-        default: --exclude=build
+        default: --exclude=build --line-length=79
       isort-options:
         required: false
         type: string
         description: Additional options to pass to isort
         default: --skip-glob=build
-      use-ruff:
+      flake8-options:
+        required: false
+        type: string
+        description: Additional options to pass to flake8
+        default: --exclude=build
+      ruff-check-options:
+        required: false
+        type: string
+        description: Additional options to pass to ruff check
+        default: --exclude=build
+      use-black:
         required: false
         type: boolean
-        description: Use ruff instead of black
+        description: Use black to format the codes
+        default: false
+      pypi-packages:
+        required: false
+        type: string
+        description: Additional packages to install
+        default: autopep8 flake8-bugbear flake8-isort pep8-naming
+      validate-codes-before-pr:
+        required: false
+        type: boolean
+        description: Validate the codes using flake8 and ruff
         default: true
 jobs:
   format-and-pr:
@@ -49,24 +69,31 @@ jobs:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
         run: >
-          pip install -U --no-cache-dir isort
-          "$([[ ${{ inputs.use-ruff }} == true ]] && echo ruff || echo black)"
-          ${{ inputs.package-path }}
+          pip install -U --no-cache-dir black isort ruff
+          ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
       - name: Format the codes using black
-        if: ${{ ! inputs.use-ruff }}
+        if: ${{ inputs.use-black }}
         run: >
           black ${{ inputs.black-format-options }} ${{ inputs.package-path }}
       - name: Format the codes using ruff
-        if: ${{ inputs.use-ruff }}
+        if: ${{ ! inputs.use-black }}
         run: >
           ruff format ${{ inputs.ruff-format-options }} ${{ inputs.package-path }}
       - name: Sort Python import definitions using isort
         run: >
           isort ${{ inputs.isort-options }} ${{ inputs.package-path }}
+      - name: Validate the codes using flake8
+        if: ${{ inputs.validate-codes-before-pr }}
+        run: >
+          flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
+      - name: Validate the codes using ruff
+        if: ${{ inputs.validate-codes-before-pr }}
+        run: >
+          ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
       - name: Create a commit message
         id: commit-message
         run: |
-          if [[ ${{ inputs.use-ruff }} == true ]]; then
+          if [[ ${{ inputs.use-black }} == true ]]; then
             f='ruff and isort'
           else
             f='black and isort'

@@ -38,6 +38,11 @@ on:
         type: string
         description: Additional options to pass to bandit
         default: --exclude=build --recursive
+      pypi-packages:
+        required: false
+        type: string
+        description: Additional packages to install
+        default: autopep8 flake8-bugbear flake8-isort pep8-naming
 jobs:
   lint-and-scan:
     runs-on: ${{ inputs.runs-on }}
@@ -49,9 +54,8 @@ jobs:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
         run: >
-          pip install -U --no-cache-dir
-          autopep8 bandit flake8 flake8-bugbear flake8-isort pep8-naming mypy
-          ruff ${{ inputs.package-path }}
+          pip install -U --no-cache-dir flake8 ruff mypy bandit
+          ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
       - name: Validate the codes using flake8
         run: >
           flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}

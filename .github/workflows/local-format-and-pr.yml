@@ -1,6 +1,9 @@
 ---
 name: Formatter for local files
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 jobs:
   python-format:
