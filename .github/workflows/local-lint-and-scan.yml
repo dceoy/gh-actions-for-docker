@@ -1,5 +1,5 @@
 ---
-name: Lint for YAML
+name: Lint for local files
 on:
   push:
     branches:
