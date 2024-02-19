@@ -3,7 +3,7 @@ gh-actions-for-devops
 
 GitHub Actions workflows for DevOps
 
-[![Lint and scan](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/local-lint-and-scan.yml/badge.svg)](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/local-lint-and-scan.yml)
+[![CI](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/gh-actions-for-devops/actions/workflows/ci.yml)
 
 Reusable workflows
 ------------------

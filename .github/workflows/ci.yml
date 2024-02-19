@@ -1,0 +1,50 @@
+---
+name: CI for this repository
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      workflow:
+        required: true
+        type: choice
+        options:
+          - lint
+          - format
+        description: Choose the workflow to run
+        default: lint
+jobs:
+  python-lint-and-scan:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+    uses: ./.github/workflows/python-package-lint-and-scan.yml
+    with:
+      package-path: .
+      python-version: 3.x
+      flake8-options: null
+      ruff-check-options: null
+      mypy-options: --install-types --non-interactive
+      bandit-options: --recursive
+  yaml-lint:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+    uses: ./.github/workflows/yaml-lint.yml
+    with:
+      search-path: .github/
+      python-version: 3.x
+  python-format:
+    if: >
+      github.event_name == 'push'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'format')
+    uses: ./.github/workflows/python-package-format-and-pr.yml
+    with:
+      package-path: .
+      python-version: 3.x
