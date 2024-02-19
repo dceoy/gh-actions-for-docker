@@ -78,10 +78,15 @@ def _parse_options():
         prog=Path(__file__).name, description="Markdown build script"
     )
     parser.add_argument(
-        "--version", action="version", version="%(prog)s {}".format(_extract_version())
+        "--version",
+        action="version",
+        version="%(prog)s {}".format(_extract_version()),
     )
     parser.add_argument(
-        "--debug", dest="debug", action="store_true", help="log with DEBUG level"
+        "--debug",
+        dest="debug",
+        action="store_true",
+        help="log with DEBUG level",
     )
     parser.add_argument(
         "--info", dest="info", action="store_true", help="log with INFO level"
