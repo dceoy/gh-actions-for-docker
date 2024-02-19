@@ -22,6 +22,9 @@ Reusable workflows
   - json-lint.yml
     - Lint for JSON
 
+  - python-package-format.yml
+    - Formatter for a Python package
+
   - python-package-lint-and-scan.yml
     - Lint and security scan for a Python package
 

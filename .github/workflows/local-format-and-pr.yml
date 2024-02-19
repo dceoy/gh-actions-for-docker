@@ -1,0 +1,10 @@
+---
+name: Formatter for local files
+on:
+  workflow_dispatch:
+jobs:
+  python-format:
+    uses: ./.github/workflows/python-package-format-and-pr.yml
+    with:
+      package-path: .
+      python-version: 3.x
