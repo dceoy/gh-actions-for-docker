@@ -3,7 +3,7 @@ name: Lint and security scan for a Python package
 on:
   workflow_call:
     inputs:
-      package-root-path:
+      package-path:
         required: false
         type: string
         description: Path to the Python package
@@ -18,11 +18,26 @@ on:
         type: string
         description: The type of machine to run the job on
         default: ubuntu-latest
-      mypy-add-options:
+      flake8-options:
+        required: false
+        type: string
+        description: Additional options to pass to flake8
+        default: --exclude=build
+      ruff-check-options:
+        required: false
+        type: string
+        description: Additional options to pass to ruff check
+        default: --exclude=build
+      mypy-options:
         required: false
         type: string
         description: Additional options to pass to mypy
-        default: --install-types --non-interactive
+        default: --exclude=build --install-types --non-interactive
+      bandit-options:
+        required: false
+        type: string
+        description: Additional options to pass to bandit
+        default: --exclude=build --recursive
 jobs:
   lint-and-scan:
     runs-on: ${{ inputs.runs-on }}
@@ -36,17 +51,16 @@ jobs:
         run: >
           pip install -U --no-cache-dir
           autopep8 bandit flake8 flake8-bugbear flake8-isort pep8-naming mypy
-          ruff ${{ inputs.package-root-path }}
+          ruff ${{ inputs.package-path }}
       - name: Validate the codes using flake8
         run: >
-          flake8 --exclude=build ${{ inputs.package-root-path }}
+          flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
       - name: Validate the codes using ruff
         run: >
-          ruff check --exclude=build ${{ inputs.package-root-path }}
+          ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
       - name: Validate the codes using Mypy
         run: >
-          mypy ${{ inputs.mypy-add-options }} --exclude=build
-          ${{ inputs.package-root-path }}
+          mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
       - name: Find security issues using Bandit
         run: >
-          bandit --exclude=build -r ${{ inputs.package-root-path }}
+          bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}

@@ -2,19 +2,26 @@
 name: Python package release on PyPI and GitHub
 on:
   workflow_call:
-    secrets:
-      PYPI_API_TOKEN:
-        required: true
-        description: PyPI API token
     inputs:
       python-version:
         required: false
         type: string
         description: Python version to use
         default: 3.x
+    secrets:
+      PYPI_API_TOKEN:
+        required: true
+        description: PyPI API token
 jobs:
+  lint-and-scan:
+    uses: ./.github/workflows/python-package-lint-and-scan.yml
+    with:
+      package-path: .
+      python-version: ${{ inputs.python-version }}
   build:
     name: Build the Python 🐍 distribution 📦
+    needs:
+      - lint-and-scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

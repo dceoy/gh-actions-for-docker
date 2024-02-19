@@ -2,13 +2,27 @@
 name: Docker image build and push using docker-compose
 on:
   workflow_call:
-    with:
-      inputs:
-        file:
-          required: false
-          type: string
-          description: Path to Docker Compose file
-          default: docker-compose.yml
+    inputs:
+      push:
+        required: false
+        type: boolean
+        description: Push the image to the registry
+        default: true
+      docker-compose-options:
+        required: false
+        type: string
+        description: Additional options to pass to docker-compose
+        default: null
+      docker-compose-build-options:
+        required: false
+        type: string
+        description: Additional options to pass to docker-compose build
+        default: --parallel  --pull
+      docker-compose-push-options:
+        required: false
+        type: string
+        description: Additional options to pass to docker-compose push
+        default: null
     secrets:
       DOCKER_USER:
         required: true
@@ -30,6 +44,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build and push the image
-        run: |
-          docker-compose -f ${{ github.event.inputs.file }} build --pull --push
+      - name: Build the image
+        run: >
+          docker-compose ${{ inputs.docker-compose-options }}
+          build ${{ inputs.docker-compose-build-options }}
+      - name: Push the image
+        if: ${{ inputs.push }}
+        run: >
+          docker-compose ${{ inputs.docker-compose-options }}
+          push ${{ inputs.docker-compose-push-options }}

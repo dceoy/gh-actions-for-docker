@@ -7,7 +7,7 @@ on:
         required: true
         type: string
         description: Path to the Python script
-      pyinstaller-add-options:
+      pyinstaller-options:
         required: false
         type: string
         description: Additional options for PyInstaller
@@ -60,7 +60,7 @@ jobs:
           python -m pip install -U --no-cache-dir ${{ inputs.python-packages-to-install }}
       - name: Build an executable file
         run: |
-          python -m PyInstaller ${{ inputs.pyinstaller-add-options }} ${{ inputs.app-script-path }}
+          python -m PyInstaller ${{ inputs.pyinstaller-options }} ${{ inputs.app-script-path }}
       - name: Upload the artifact
         uses: actions/upload-artifact@v4
         with:
