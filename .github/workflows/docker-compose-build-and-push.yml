@@ -6,7 +6,7 @@ on:
       push:
         required: false
         type: boolean
-        description: Push the image to the registry
+        description: Push images to the registry
         default: true
       docker-compose-options:
         required: false
@@ -44,11 +44,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build the image
+      - name: Build images
         run: >
           docker-compose ${{ inputs.docker-compose-options }}
           build ${{ inputs.docker-compose-build-options }}
-      - name: Push the image
+      - name: Push the images
         if: ${{ inputs.push }}
         run: >
           docker-compose ${{ inputs.docker-compose-options }}

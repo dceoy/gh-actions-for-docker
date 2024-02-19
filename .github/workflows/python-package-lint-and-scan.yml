@@ -6,7 +6,7 @@ on:
       package-path:
         required: false
         type: string
-        description: Path to the Python package
+        description: Path to a Python package or project
         default: .
       python-version:
         required: false
@@ -16,7 +16,7 @@ on:
       runs-on:
         required: false
         type: string
-        description: The type of machine to run the job on
+        description: Type of machine to run the job on
         default: ubuntu-latest
       flake8-options:
         required: false
@@ -56,13 +56,13 @@ jobs:
         run: >
           pip install -U --no-cache-dir flake8 ruff mypy bandit
           ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
-      - name: Validate the codes using flake8
+      - name: Lint codes using flake8
         run: >
           flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
-      - name: Validate the codes using ruff
+      - name: Lint codes using ruff
         run: >
           ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
-      - name: Validate the codes using Mypy
+      - name: Lint codes using Mypy
         run: >
           mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
       - name: Find security issues using Bandit

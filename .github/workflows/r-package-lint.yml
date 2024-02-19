@@ -3,10 +3,10 @@ name: Lint for R
 on:
   workflow_call:
     inputs:
-      project-path:
+      package-path:
         required: false
         type: string
-        description: Path to an R project
+        description: Path to an R package or project
         default: .
       r-version:
         required: false
@@ -16,7 +16,7 @@ on:
       runs-on:
         required: false
         type: string
-        description: The type of machine to run the job on
+        description: Type of machine to run the job on
         default: ubuntu-latest
       r-libs-user:
         required: false
@@ -27,7 +27,7 @@ on:
         required: false
         type: boolean
         description: Run package lint
-        default: false
+        default: true
 jobs:
   lint:
     runs-on: ${{ inputs.runs-on }}
@@ -46,24 +46,23 @@ jobs:
         with:
           r-version: ${{ inputs.r-version }}
           use-public-rspm: true
-      - name: Install lintr
-        if: ${{ ! inputs.lint-package }}
-        shell: Rscript {0}
-        run: |
-          install.packages(pkgs = 'lintr', dependencies = TRUE, clean = TRUE)
       - name: Install lintr and packages declared in DESCRIPTION
         if: ${{ inputs.lint-package }}
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::lintr, local::.
-          needs: lint
-      - name: Execute lintr::lint_dir()
+      - name: Install lintr
         if: ${{ ! inputs.lint-package }}
         shell: Rscript {0}
         run: |
-          lintr::lint_dir(path = "${{ inputs.project-path }}")
-      - name: Execute lintr::lint_package()
+          install.packages(pkgs = 'lintr', dependencies = TRUE, clean = TRUE)
+      - name: Lint codes using lintr::lint_package()
         if: ${{ inputs.lint-package }}
         shell: Rscript {0}
         run: |
-          lintr::lint_package(path = "${{ inputs.project-path }}")
+          lintr::lint_package(path = "${{ inputs.package-path }}")
+      - name: Lint codes using lintr::lint_dir()
+        if: ${{ ! inputs.lint-package }}
+        shell: Rscript {0}
+        run: |
+          lintr::lint_dir(path = "${{ inputs.package-path }}")

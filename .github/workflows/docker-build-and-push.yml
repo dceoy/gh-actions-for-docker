@@ -15,7 +15,7 @@ on:
       file:
         required: false
         type: string
-        description: Path to the Dockerfile
+        description: Path to a Dockerfile
         default: ${{ inputs.context }}/Dockerfile
       build-args:
         required: false
@@ -30,7 +30,7 @@ on:
       push:
         required: false
         type: boolean
-        description: Push the image to the registry
+        description: Push an image to the registry
         default: true
       save-artifact:
         required: false
@@ -71,7 +71,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build and push the image
+      - name: Build and push an image
         uses: docker/build-push-action@v5
         with:
           tags: ${{ inputs.tags }}

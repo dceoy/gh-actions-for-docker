@@ -6,7 +6,7 @@ on:
       app-script-path:
         required: true
         type: string
-        description: Path to the Python script
+        description: Path to a Python script
       pyinstaller-options:
         required: false
         type: string
@@ -20,7 +20,7 @@ on:
       runs-on:
         required: false
         type: string
-        description: The type of machine to run the job on
+        description: Type of machine to run the job on
         default: windows-latest
       python-version:
         required: false

@@ -22,20 +22,23 @@ Reusable workflows
   - json-lint.yml
     - Lint for JSON
 
-  - python-package-format.yml
-    - Formatter for a Python package
+  - python-package-format-and-pr.yml
+    - Formatter for Python
 
   - python-package-lint-and-scan.yml
-    - Lint and security scan for a Python package
+    - Lint and security scan for Python
 
   - python-package-release-on-pypi-and-github.yml
     - Python package release on PyPI and GitHub
 
   - python-pyinstaller.yml
-    - Build an executable file using PyInstaller
+    - Build using PyInstaller
 
-  - r-lint.yml
-    - Lint for an R project
+  - r-package-format-and-pr.yml
+    - Formatter for R
+
+  - r-package-lint.yml
+    - Lint for R
 
   - shell-lint.yml
     - Lint for Shell

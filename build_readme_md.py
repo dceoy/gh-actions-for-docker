@@ -30,12 +30,12 @@ def _detect_reusable_workflow(workflow_dir):
     _print_log(f"Detect reusable workflows: {workflow_dir}")
     for f in sorted(workflow_dir.iterdir(), key=lambda f: f.name):
         if f.is_file() and f.suffix == ".yml":
-            logger.debug(f"Read YAML: {f}")
+            logger.info(f"Read YAML: {f}")
             with open(f, "r") as y:
                 d = yaml.safe_load(y)
             logger.debug(f"YAML: {d}")
             if "name" in d and "workflow_call" in d[True]:
-                logger.info(f"Found a reusable workflow: {f}")
+                print(f"  - {f}")
                 yield {"name": d["name"], "file": f.name}
 
 
@@ -54,8 +54,6 @@ def _render_md(workflows, template_md, output_md):
 
 
 def _print_log(message):
-    logger = logging.getLogger(__name__)
-    logger.info(message)
     print(">>\t{}".format(message), flush=True)
 
 
