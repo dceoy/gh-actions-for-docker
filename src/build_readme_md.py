@@ -16,7 +16,7 @@ def main():
     logger.debug("args:\t{}".format(vars(args)))
     root_dir = Path.cwd()
     readme_md = root_dir / "README.md"
-    readme_md_j2 = root_dir / "templates" / f"{readme_md.name}.j2"
+    readme_md_j2 = root_dir / f"{readme_md.name}.j2"
     workflow_dir = root_dir / ".github" / "workflows"
     _render_md(
         workflows=list(_detect_reusable_workflow(workflow_dir=workflow_dir)),
@@ -80,13 +80,14 @@ def _parse_options():
         action="version",
         version="%(prog)s {}".format(_extract_version()),
     )
-    parser.add_argument(
+    log_parser = parser.add_mutually_exclusive_group(required=False)
+    log_parser.add_argument(
         "--debug",
         dest="debug",
         action="store_true",
         help="log with DEBUG level",
     )
-    parser.add_argument(
+    log_parser.add_argument(
         "--info", dest="info", action="store_true", help="log with INFO level"
     )
     return parser.parse_args()

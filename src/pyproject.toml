@@ -25,4 +25,4 @@ mypy = "^1.8.0"
 ruff = "^0.2.2"
 
 [tool.poetry.scripts]
-build_readme_md = "build_readme_md:main"
+build-readme-md = "build_readme_md:main"

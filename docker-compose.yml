@@ -1,0 +1,18 @@
+---
+version: '3'
+
+services:
+  build-readme-md:
+    container_name: build-readme-md
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    image: build-readme-md:latest
+    volumes:
+      - ${PWD}:/wd
+    working_dir: /wd
+    entrypoint:
+      - /usr/local/bin/poetry
+    command:
+      - run
+      - build-readme-md

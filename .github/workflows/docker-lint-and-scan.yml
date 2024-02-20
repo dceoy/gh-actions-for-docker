@@ -8,39 +8,53 @@ on:
         type: string
         description: Paths to files to lint and scan (CSV)
         default: ./Dockerfile
+      login:
+        required: false
+        type: boolean
+        description: Login to Docker Hub
+        default: false
       hadolint-options:
         required: false
         type: string
         description: Additional options to pass to hadolint
-        default: null
+        default: --failure-threshold error
       trivy-config-options:
         required: false
         type: string
         description: Additional options to pass to trivy config
         default: --exit-code 1
+    secrets:
+      DOCKER_USER:
+        required: false
+        description: Docker Hub username
+      DOCKER_TOKEN:
+        required: false
+        description: Docker Hub token
 jobs:
   lint-and-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        if: ${{ inputs.login }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
       - name: Pull images for hadolint and trivy
-        shell: bash -euo pipefail
+        shell: bash -euo pipefail {0}
         run: |
           docker pull hadolint/hadolint
           docker pull aquasec/trivy
       - name: Lint the codes using hadolint
-        shell: bash -euo pipefail
-        env:
-          IFS: ','
+        shell: bash -euo pipefail {0}
         run: |
           for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
             docker run --rm -i hadolint/hadolint \
               hadolint ${{ inputs.hadolint-options }} - < "${p}"
           done
       - name: Find security issues using trivy config
-        shell: bash -euo pipefail
-        env:
-          IFS: ','
+        shell: bash -euo pipefail {0}
         run: |
           for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
             docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \

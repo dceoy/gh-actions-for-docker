@@ -15,6 +15,7 @@ on:
         options:
           - lint
           - format
+          - build
         description: Choose the workflow to run
         default: lint
 jobs:
@@ -25,7 +26,7 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
     uses: ./.github/workflows/python-package-lint-and-scan.yml
     with:
-      package-path: .
+      package-path: ./src
       python-version: 3.x
       flake8-options: null
       ruff-check-options: null
@@ -46,5 +47,28 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'format')
     uses: ./.github/workflows/python-package-format-and-pr.yml
     with:
-      package-path: .
+      package-path: ./src
       python-version: 3.x
+  docker-lint-and-scan:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+    uses: ./.github/workflows/docker-lint-and-scan.yml
+    with:
+      dockerfile-paths: ./src/Dockerfile
+      hadolint-options: --failure-threshold error
+      trivy-config-options: --exit-code 0
+  docker-build-and-save:
+    if: >
+      github.event_name == 'workflow_dispatch' && inputs.workflow == 'build'
+    uses: ./.github/workflows/docker-build-and-push.yml
+    with:
+      tags: build-readme-md:latest
+      context: ./src
+      file: ./src/Dockerfile
+      login: false
+      push: false
+      save-artifact: true
+      artifact-name: build-readme-md
+      retention-days: 1
