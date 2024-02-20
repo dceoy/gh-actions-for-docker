@@ -30,6 +30,10 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Docker Hub token
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   lint-and-scan:
     runs-on: ubuntu-latest
@@ -42,19 +46,16 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Pull images for hadolint and trivy
-        shell: bash -euo pipefail {0}
         run: |
           docker pull hadolint/hadolint
           docker pull aquasec/trivy
       - name: Lint the codes using hadolint
-        shell: bash -euo pipefail {0}
         run: |
           for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
             docker run --rm -i hadolint/hadolint \
               hadolint ${{ inputs.hadolint-options }} - < "${p}"
           done
       - name: Find security issues using trivy config
-        shell: bash -euo pipefail {0}
         run: |
           for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
             docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \

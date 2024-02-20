@@ -89,6 +89,10 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Docker Hub token
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -124,7 +128,6 @@ jobs:
           pull: true
       - name: Output the first image tag
         id: output-tag
-        shell: bash -euo pipefail {0}
         env:
           TAGS: ${{ inputs.tags }}
         run: >
@@ -147,7 +150,6 @@ jobs:
           sarif_file: trivy-results.sarif
       - name: Save the image
         if: ${{ inputs.save-artifact }}
-        shell: bash -euo pipefail {0}
         run: >
           mkdir -p "${DIST_DIR}"
           && docker save ${{ steps.build-and-push.outputs.TAG }}

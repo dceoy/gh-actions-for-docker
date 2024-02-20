@@ -18,6 +18,10 @@ on:
         type: boolean
         description: Run lint before creating a pull request
         default: true
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   format-and-pr:
     runs-on: ubuntu-latest

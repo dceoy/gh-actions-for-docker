@@ -43,6 +43,10 @@ on:
         type: string
         description: Additional packages to install
         default: autopep8 flake8-bugbear flake8-isort pep8-naming
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   lint-and-scan:
     runs-on: ${{ inputs.runs-on }}

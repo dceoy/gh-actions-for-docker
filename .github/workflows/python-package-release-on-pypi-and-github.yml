@@ -12,6 +12,10 @@ on:
       PYPI_API_TOKEN:
         required: true
         description: PyPI API token
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   lint-and-scan:
     uses: ./.github/workflows/python-package-lint-and-scan.yml

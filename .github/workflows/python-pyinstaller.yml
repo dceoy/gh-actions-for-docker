@@ -42,6 +42,10 @@ on:
         type: string
         description: Path to the artifact
         default: dist
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   bundle:
     runs-on: ${{ inputs.runs-on }}

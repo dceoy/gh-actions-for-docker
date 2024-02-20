@@ -35,6 +35,10 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Docker Hub token
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
