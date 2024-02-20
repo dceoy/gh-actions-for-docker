@@ -6,7 +6,7 @@ on:
       tags:
         required: true
         type: string
-        description: List of tags
+        description: List of image tags
       context:
         required: false
         type: string
@@ -52,6 +52,36 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      lint-before-build:
+        required: false
+        type: boolean
+        description: Lint Dockerfile before build
+        default: true
+      hadolint-failure-threshold:
+        required: false
+        type: string
+        description: Failure threshold for hadolint
+        default: error
+      scan-after-build:
+        required: false
+        type: boolean
+        description: Scan the image after build
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for Trivy
+        default: 0
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-scanners:
+        required: false
+        type: string
+        description: List of scanners to use
+        default: vuln,secret
     secrets:
       DOCKER_USER:
         required: false
@@ -76,6 +106,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Lint Dockerfile
+        if: ${{ inputs.lint-before-build }}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ inputs.file }}
+          failure-threshold: ${{ inputs.hadolint-failure-threshold }}
       - name: Build and push an image
         uses: docker/build-push-action@v5
         with:
@@ -86,14 +122,35 @@ jobs:
           platforms: ${{ inputs.platforms }}
           push: ${{ inputs.push }}
           pull: true
-      - name: Save the image
-        if: ${{ inputs.save-artifact }}
+      - name: Output the first image tag
+        id: output-tag
         shell: bash -euo pipefail {0}
         env:
           TAGS: ${{ inputs.tags }}
         run: >
+          echo "TAG=${TAGS%%,*}" >> $GITHUB_OUTPUT
+      - name: Run Trivy vulnerability scanner
+        if: ${{ inputs.scan-after-build }}
+        uses: aquasecurity/trivy-action@0.17.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.output-tag.outputs.TAG }}
+          exit-code: ${{ inputs.trivy-exit-code }}
+          severity: ${{ inputs.trivy-severity }}
+          scanners: ${{ inputs.trivy-scanners }}
+          format: sarif
+          output: trivy-results.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ inputs.scan-after-build }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif
+      - name: Save the image
+        if: ${{ inputs.save-artifact }}
+        shell: bash -euo pipefail {0}
+        run: >
           mkdir -p "${DIST_DIR}"
-          && docker save "${TAGS%%,*}"
+          && docker save ${{ steps.build-and-push.outputs.TAG }}
           | gzip - > "${DIST_DIR}/${{ inputs.artifact-name }}.tar.gz"
       - name: Upload the artifact
         if: ${{ inputs.save-artifact }}
