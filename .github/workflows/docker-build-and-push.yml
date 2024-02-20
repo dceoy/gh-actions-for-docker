@@ -16,7 +16,7 @@ on:
         required: false
         type: string
         description: Path to a Dockerfile
-        default: ${{ inputs.context }}/Dockerfile
+        default: Dockerfile
       build-args:
         required: false
         type: string
@@ -59,6 +59,8 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      DIST_DIR: /tmp/docker-image-dist-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -84,13 +86,16 @@ jobs:
       - name: Save the image
         if: ${{ inputs.save-artifact }}
         shell: bash -euo pipefail
-        run: |
-          docker save ${{ inputs.tags[0] }} \
-            | gzip - > ${{ inputs.artifact-name }}.tar.gz
+        env:
+          TAGS: ${{ inputs.tags }}
+        run: >
+          mkdir -p "${DIST_DIR}"
+          && docker save "${TAGS%%,*}"
+          | gzip - > "${DIST_DIR}/${{ inputs.artifact-name }}.tar.gz"
       - name: Upload the artifact
         if: ${{ inputs.save-artifact }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact-name }}
-          path: ${{ inputs.artifact-name }}.tar.gz
+          path: ${{ env.DIST_DIR }}
           retention-days: ${{ inputs.retention-days }}

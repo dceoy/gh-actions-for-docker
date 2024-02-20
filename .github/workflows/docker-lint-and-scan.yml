@@ -1,0 +1,48 @@
+---
+name: Lint and security scan for Dockerfile
+on:
+  workflow_call:
+    inputs:
+      dockerfile-paths:
+        required: false
+        type: string
+        description: Paths to files to lint and scan (CSV)
+        default: ./Dockerfile
+      hadolint-options:
+        required: false
+        type: string
+        description: Additional options to pass to hadolint
+        default: null
+      trivy-config-options:
+        required: false
+        type: string
+        description: Additional options to pass to trivy config
+        default: --exit-code 1
+jobs:
+  lint-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull images for hadolint and trivy
+        shell: bash -euo pipefail
+        run: |
+          docker pull hadolint/hadolint
+          docker pull aquasec/trivy
+      - name: Lint the codes using hadolint
+        shell: bash -euo pipefail
+        env:
+          IFS: ','
+        run: |
+          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
+            docker run --rm -i hadolint/hadolint \
+              hadolint ${{ inputs.hadolint-options }} - < "${p}"
+          done
+      - name: Find security issues using trivy config
+        shell: bash -euo pipefail
+        env:
+          IFS: ','
+        run: |
+          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
+            docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \
+              config ${{ inputs.trivy-config-options }} "${p}"
+          done

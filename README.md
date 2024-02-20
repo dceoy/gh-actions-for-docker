@@ -19,6 +19,9 @@ Reusable workflows
   - docker-compose-build-and-push.yml
     - Docker image build and push using docker-compose
 
+  - docker-lint-and-scan.yml
+    - Lint and security scan for Dockerfile
+
   - json-lint.yml
     - Lint for JSON
 
