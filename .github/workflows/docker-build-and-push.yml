@@ -126,12 +126,26 @@ jobs:
           platforms: ${{ inputs.platforms }}
           push: ${{ inputs.push }}
           pull: true
+          load: true
       - name: Output the first image tag
         id: output-tag
         env:
           TAGS: ${{ inputs.tags }}
         run: >
           echo "TAG=${TAGS%%,*}" >> $GITHUB_OUTPUT
+      - name: Save the image
+        if: ${{ inputs.save-artifact }}
+        run: >
+          mkdir -p "${DIST_DIR}"
+          && docker save ${{ steps.output-tag.outputs.TAG }}
+          | gzip - > "${DIST_DIR}/${{ inputs.artifact-name }}.tar.gz"
+      - name: Upload the artifact
+        if: ${{ inputs.save-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ env.DIST_DIR }}
+          retention-days: ${{ inputs.retention-days }}
       - name: Run Trivy vulnerability scanner
         if: ${{ inputs.scan-after-build }}
         uses: aquasecurity/trivy-action@0.17.0
@@ -148,16 +162,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
-      - name: Save the image
-        if: ${{ inputs.save-artifact }}
-        run: >
-          mkdir -p "${DIST_DIR}"
-          && docker save ${{ steps.build-and-push.outputs.TAG }}
-          | gzip - > "${DIST_DIR}/${{ inputs.artifact-name }}.tar.gz"
-      - name: Upload the artifact
-        if: ${{ inputs.save-artifact }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.artifact-name }}
-          path: ${{ env.DIST_DIR }}
-          retention-days: ${{ inputs.retention-days }}
