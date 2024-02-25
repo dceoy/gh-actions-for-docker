@@ -49,7 +49,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
-        if: ${{ inputs.login }}
+        if: inputs.login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
@@ -59,7 +59,7 @@ jobs:
           docker-compose ${{ inputs.docker-compose-options }}
           build ${{ inputs.docker-compose-build-options }}
       - name: Push the images
-        if: ${{ inputs.push }}
+        if: inputs.push
         run: >
           docker-compose ${{ inputs.docker-compose-options }}
           push ${{ inputs.docker-compose-push-options }}

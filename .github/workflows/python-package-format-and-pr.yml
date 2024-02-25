@@ -76,22 +76,22 @@ jobs:
           pip install -U --no-cache-dir black isort ruff
           ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
       - name: Format the codes using black
-        if: ${{ inputs.use-black }}
+        if: inputs.use-black
         run: >
           black ${{ inputs.black-format-options }} ${{ inputs.package-path }}
       - name: Format the codes using ruff
-        if: ${{ ! inputs.use-black }}
+        if: (! inputs.use-black)
         run: >
           ruff format ${{ inputs.ruff-format-options }} ${{ inputs.package-path }}
       - name: Sort Python import definitions using isort
         run: >
           isort ${{ inputs.isort-options }} ${{ inputs.package-path }}
       - name: Lint the codes using flake8
-        if: ${{ inputs.lint-before-pr }}
+        if: inputs.lint-before-pr
         run: >
           flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
       - name: Lint the codes using ruff
-        if: ${{ inputs.lint-before-pr }}
+        if: inputs.lint-before-pr
         run: >
           ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
       - name: Create a commit message

@@ -31,14 +31,14 @@ jobs:
         with:
           terraform-version: ${{ inputs.terraform-version }}
       - name: Install tflint
-        if: ${{ inputs.lint-before-pr }}
+        if: inputs.lint-before-pr
         run: |
           curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
       - name: Format the codes using terraform fmt
         run: |
           terraform fmt -recursive ${{ inputs.search-path }}
       - name: Lint the codes using tflint
-        if: ${{ inputs.lint-before-pr }}
+        if: inputs.lint-before-pr
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
       - name: Create a commit message

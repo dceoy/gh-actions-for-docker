@@ -59,7 +59,7 @@ jobs:
         run: |
           python -m pip install -U --no-cache-dir pip PyInstaller
       - name: Install Python packages
-        if: ${{ inputs.python-packages-to-install != null }}
+        if: inputs.python-packages-to-install != null
         run: |
           python -m pip install -U --no-cache-dir ${{ inputs.python-packages-to-install }}
       - name: Build an executable file

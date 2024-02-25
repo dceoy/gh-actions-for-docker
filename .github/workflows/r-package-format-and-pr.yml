@@ -52,32 +52,32 @@ jobs:
           r-version: ${{ inputs.r-version }}
           use-public-rspm: true
       - name: Install lintr, styler, and packages declared in DESCRIPTION
-        if: ${{ inputs.format-package }}
+        if: inputs.format-package
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::lintr, any::styler, local::.
       - name: Install lintr and styler
-        if: ${{ ! inputs.format-package }}
+        if: (! inputs.format-package)
         shell: Rscript {0}
         run: |
           install.packages(pkgs = c('lintr', 'styler'), dependencies = TRUE, clean = TRUE)
       - name: Format the codes using styler::style_pkg()
-        if: ${{ inputs.format-package }}
+        if: inputs.format-package
         shell: Rscript {0}
         run: |
           styler::style_pkg(path = "${{ inputs.package-path }}")
       - name: Format the codes using styler::style_dir()
-        if: ${{ ! inputs.format-package }}
+        if: (! inputs.format-package)
         shell: Rscript {0}
         run: |
           styler::style_dir(path = "${{ inputs.package-path }}")
       - name: Lint the codes using lintr::lint_package()
-        if: ${{ inputs.lint-before-pr && inputs.format-package }}
+        if: inputs.lint-before-pr && inputs.format-package
         shell: Rscript {0}
         run: |
           lintr::lint_package(path = "${{ inputs.package-path }}")
       - name: Lint the codes using lintr::lint_dir()
-        if: ${{ ! (inputs.lint-before-pr && inputs.format-package) }}
+        if: (! (inputs.lint-before-pr && inputs.format-package))
         shell: Rscript {0}
         run: |
           lintr::lint_dir(path = "${{ inputs.package-path }}")

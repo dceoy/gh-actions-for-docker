@@ -47,22 +47,22 @@ jobs:
           r-version: ${{ inputs.r-version }}
           use-public-rspm: true
       - name: Install lintr and packages declared in DESCRIPTION
-        if: ${{ inputs.lint-package }}
+        if: inputs.lint-package
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::lintr, local::.
       - name: Install lintr
-        if: ${{ ! inputs.lint-package }}
+        if: (! inputs.lint-package)
         shell: Rscript {0}
         run: |
           install.packages(pkgs = 'lintr', dependencies = TRUE, clean = TRUE)
       - name: Lint the codes using lintr::lint_package()
-        if: ${{ inputs.lint-package }}
+        if: inputs.lint-package
         shell: Rscript {0}
         run: |
           lintr::lint_package(path = "${{ inputs.package-path }}")
       - name: Lint the codes using lintr::lint_dir()
-        if: ${{ ! inputs.lint-package }}
+        if: (! inputs.lint-package)
         shell: Rscript {0}
         run: |
           lintr::lint_dir(path = "${{ inputs.package-path }}")
