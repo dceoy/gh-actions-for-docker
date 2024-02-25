@@ -16,6 +16,7 @@ on:
           - lint
           - format
           - build
+          - release
         description: Choose the workflow to run
         default: lint
 jobs:
@@ -72,3 +73,10 @@ jobs:
       save-artifact: true
       artifact-name: build-readme-md
       retention-days: 1
+  github-release:
+    if: >
+      github.event_name == 'workflow_dispatch' && inputs.workflow == 'release'
+    uses: ./.github/workflows/github-release.yml
+    with:
+      tag_name: null
+      create_new_tag: false
