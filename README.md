@@ -22,6 +22,9 @@ Reusable workflows
   - docker-lint-and-scan.yml
     - Lint and security scan for Dockerfile
 
+  - github-release.yml
+    - Release on GitHub
+
   - json-lint.yml
     - Lint for JSON
 
