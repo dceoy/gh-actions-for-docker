@@ -65,7 +65,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create the GitHub release for the tag
         if: (! inputs.create_new_tag)
-        shell: bash -euox pipefail {0}
         run: >
           gh release create '${{ inputs.tag_name }}'
           --repo '${{ github.repository }}' --generate-notes --verify-tag
