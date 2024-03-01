@@ -148,7 +148,7 @@ jobs:
           retention-days: ${{ inputs.retention-days }}
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
-        uses: aquasecurity/trivy-action@0.17.0
+        uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: image
           image-ref: ${{ steps.output-tag.outputs.TAG }}
