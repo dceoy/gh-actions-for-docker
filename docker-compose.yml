@@ -10,9 +10,10 @@ services:
     image: build-readme-md:latest
     volumes:
       - ${PWD}:/wd
-    working_dir: /wd
+    working_dir: /wd/src
     entrypoint:
       - /usr/local/bin/poetry
     command:
       - run
-      - build-readme-md
+      - python
+      - ./build_readme_md.py

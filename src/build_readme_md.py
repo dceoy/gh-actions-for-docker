@@ -14,7 +14,7 @@ def main():
     _set_log_config(args=args)
     logger = logging.getLogger(__name__)
     logger.debug("args:\t{}".format(vars(args)))
-    root_dir = Path.cwd()
+    root_dir = Path(__file__).parent.parent
     readme_md = root_dir / "README.md"
     readme_md_j2 = root_dir / f"{readme_md.name}.j2"
     workflow_dir = root_dir / ".github" / "workflows"

@@ -8,8 +8,8 @@ GitHub Actions workflows for DevOps
 Reusable workflows
 ------------------
 
-- .github/workflows/
+- [.github/workflows/](.github/workflows/)
 {% for f in workflows %}
-  - {{ f.file }}
+  - [{{ f.file }}](.github/workflows/{{ f.file }})
     - {{ f.name }}
 {% endfor %}

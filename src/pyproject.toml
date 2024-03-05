@@ -23,6 +23,3 @@ flake8-isort = "^6.1.1"
 pep8-naming = "^0.13.3"
 mypy = "^1.8.0"
 ruff = "^0.3.0"
-
-[tool.poetry.scripts]
-build-readme-md = "build_readme_md:main"
