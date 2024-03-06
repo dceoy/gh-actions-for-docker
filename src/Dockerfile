@@ -9,9 +9,11 @@ COPY . /tmp/src
 RUN set -e \
       && cd /tmp/src \
       && /usr/local/bin/poetry config virtualenvs.create false \
-      && /usr/local/bin/poetry install --no-interaction \
+      && /usr/local/bin/poetry install --no-interaction --no-root \
       && cd \
       && rm -rf /tmp/src
 
+ENV PYTHONDONTWRITEBYTECODE=1
+
 ENTRYPOINT ["/usr/local/bin/poetry"]
-CMD ["run", "build-readme-md"]
+CMD ["run", "python"]

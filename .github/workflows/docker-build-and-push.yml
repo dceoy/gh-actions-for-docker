@@ -26,7 +26,7 @@ on:
         required: false
         type: string
         description: List of target platforms for build
-        default: linux/arm64
+        default: linux/amd64,linux/arm64,linux/arm/v7
       login:
         required: false
         type: boolean
