@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import tomllib
 from pathlib import Path
 
@@ -13,7 +14,7 @@ def main():
     args = _parse_options()
     _set_log_config(args=args)
     logger = logging.getLogger(__name__)
-    logger.debug("args:\t{}".format(vars(args)))
+    logger.debug("args:{0}{1}".format(os.linesep, vars(args)))
     root_dir = Path(__file__).parent.parent
     readme_md = root_dir / "README.md"
     readme_md_j2 = root_dir / f"{readme_md.name}.j2"
