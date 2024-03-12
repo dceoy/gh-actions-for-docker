@@ -73,6 +73,14 @@ jobs:
       save-artifact: true
       artifact-name: build-readme-md
       retention-days: 1
+  github-codeql-analysis:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+    uses: ./.github/workflows/github-codeql-analysis.yml
+    with:
+      language: python
   github-release:
     if: >
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'release'

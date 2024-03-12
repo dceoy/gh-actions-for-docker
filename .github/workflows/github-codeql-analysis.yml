@@ -1,0 +1,37 @@
+---
+name: GitHub CodeQL Analysis
+on:
+  workflow_call:
+    inputs:
+      language:
+        required: true
+        type: string
+        description: The language to analyze
+        default: python   # { c-cpp, csharp, go, java-kotlin, javascript-typescript, python, ruby, swift }
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      security-events: write  # required for all workflows
+      actions: read           # only required for workflows in private repositories
+      contents: read          # only required for workflows in private repositories
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - ${{ inputs.language }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild   # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{matrix.language}}
