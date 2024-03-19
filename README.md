@@ -32,7 +32,7 @@ Reusable workflows
     - Lint for JSON
 
   - [microsoft-defender-for-devops.yml](.github/workflows/microsoft-defender-for-devops.yml)
-    - Microsoft Defender For Devops
+    - Microsoft Defender for Devops
 
   - [python-package-format-and-pr.yml](.github/workflows/python-package-format-and-pr.yml)
     - Formatter for Python

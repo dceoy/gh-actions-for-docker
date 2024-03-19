@@ -3,24 +3,24 @@ name: Release on GitHub
 on:
   workflow_call:
     inputs:
-      tag_name:
+      tag-name:
         required: false
         type: string
         description: Git tag to create a release for
         default: null
-      create_new_tag:
+      create-new-tag:
         required: false
         type: boolean
         description: Create a new tag if the input tag does not exist
         default: false
   workflow_dispatch:
     inputs:
-      tag_name:
+      tag-name:
         required: false
         type: string
         description: Git tag to create a release for
         default: null
-      create_new_tag:
+      create-new-tag:
         required: false
         type: boolean
         description: Create a new tag if the input tag does not exist
@@ -30,9 +30,7 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  github-release-with-current-tag:
-    name: Create the GitHub release for the current tag
-    if: startsWith(github.ref, 'refs/tags/')
+  github-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
@@ -40,36 +38,29 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Validate the consistency
-        if: inputs.tag_name != null && github.ref_name != inputs.tag_name
+        if: >
+          startsWith(github.ref, 'refs/tags/') && inputs.tag-name != null
+          && github.ref_name != inputs.tag-name
         run: >
-          echo 'Invalid input tag: ${{ inputs.tag_name }} != ${{ github.ref_name }}'
+          echo 'Invalid input tag: ${{ inputs.tag-name }} != ${{ github.ref_name }}'
           && exit 1
-      - uses: actions/checkout@v4
+      - name: Validate the input tag
+        if: >
+          (! startsWith(github.ref, 'refs/tags/')) && inputs.tag-name == null
+        run: >
+          echo 'An input tag is required for non-tag events' && exit 2
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Create the GitHub release for the tag
+        if: >
+          startsWith(github.ref, 'refs/tags/')
+          || ((! startsWith(github.ref, 'refs/tags/')) && ! inputs.create-new-tag)
         run: >
           gh release create '${{ github.ref_name }}'
           --repo '${{ github.repository }}' --generate-notes --verify-tag
-  github-release-with-input-tag:
-    name: Create the GitHub release with the new tag
-    if: (! startsWith(github.ref, 'refs/tags/'))
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write  # IMPORTANT: mandatory for making GitHub Releases
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    steps:
-      - name: Validate the input tag
-        if: inputs.tag_name == null
-        run: >
-          echo 'Input tag is required for non-tag events' && exit 2
-      - uses: actions/checkout@v4
       - name: Create the GitHub release for the tag
-        if: (! inputs.create_new_tag)
+        if: >
+          (! startsWith(github.ref, 'refs/tags/')) && inputs.create-new-tag
         run: >
-          gh release create '${{ inputs.tag_name }}'
-          --repo '${{ github.repository }}' --generate-notes --verify-tag
-      - name: Create the GitHub release for the tag
-        if: inputs.create_new_tag
-        run: >
-          gh release create '${{ inputs.tag_name }}'
+          gh release create '${{ inputs.tag-name }}'
           --repo '${{ github.repository }}' --generate-notes
