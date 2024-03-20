@@ -21,7 +21,8 @@ jobs:
   lint-and-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform-version: ${{ inputs.terraform-version }}
@@ -29,10 +30,10 @@ jobs:
         run: |
           curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
           curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-      - name: Lint the codes using terraform fmt
+      - name: Lint the code using terraform fmt
         run: |
           terraform fmt -recursive -check ${{ inputs.search-path }}
-      - name: Lint the codes using tflint
+      - name: Lint the code using tflint
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
       - name: Find security issues using tfsec

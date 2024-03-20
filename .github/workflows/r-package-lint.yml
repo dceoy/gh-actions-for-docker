@@ -40,7 +40,8 @@ jobs:
       R_LIBS_USER: ${{ inputs.r-libs-user }}
       LINTR_ERROR_ON_LINT: true
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
@@ -56,12 +57,12 @@ jobs:
         shell: Rscript {0}
         run: |
           install.packages(pkgs = 'lintr', dependencies = TRUE, clean = TRUE)
-      - name: Lint the codes using lintr::lint_package()
+      - name: Lint the code using lintr::lint_package()
         if: inputs.lint-package
         shell: Rscript {0}
         run: |
           lintr::lint_package(path = "${{ inputs.package-path }}")
-      - name: Lint the codes using lintr::lint_dir()
+      - name: Lint the code using lintr::lint_dir()
         if: (! inputs.lint-package)
         shell: Rscript {0}
         run: |

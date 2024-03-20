@@ -26,7 +26,8 @@ jobs:
   format-and-pr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform-version: ${{ inputs.terraform-version }}
@@ -34,17 +35,17 @@ jobs:
         if: inputs.lint-before-pr
         run: |
           curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-      - name: Format the codes using terraform fmt
+      - name: Format the code using terraform fmt
         run: |
           terraform fmt -recursive ${{ inputs.search-path }}
-      - name: Lint the codes using tflint
+      - name: Lint the code using tflint
         if: inputs.lint-before-pr
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
       - name: Create a commit message
         id: commit-message
         run: |
-          echo "COMMIT_MESSAGE=Reformat Terraform codes using terraform fmt" >> "${GITHUB_OUTPUT}"
+          echo "COMMIT_MESSAGE=Reformat Terraform code using terraform fmt" >> "${GITHUB_OUTPUT}"
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v6
         with:
