@@ -115,6 +115,8 @@ jobs:
             ${{ inputs.registry }}/${{ inputs.image-name }}
           tags: |
             type=sha
+            type=sha,format=long
+            type=raw,value=latest
             type=schedule
             type=ref,event=branch
             type=ref,event=tag
