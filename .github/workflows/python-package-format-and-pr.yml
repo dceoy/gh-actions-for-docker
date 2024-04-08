@@ -18,15 +18,15 @@ on:
         type: string
         description: Type of machine to run the job on
         default: ubuntu-latest
-      ruff-format-options:
-        required: false
-        type: string
-        description: Additional options to pass to ruff format
-        default: --exclude=build --line-length=79
       black-options:
         required: false
         type: string
         description: Additional options to pass to black
+        default: --exclude=build
+      ruff-format-options:
+        required: false
+        type: string
+        description: Additional options to pass to ruff format
         default: --exclude=build --line-length=79
       isort-options:
         required: false
@@ -79,7 +79,7 @@ jobs:
       - name: Format the code using black
         if: inputs.use-black
         run: >
-          black ${{ inputs.black-format-options }} ${{ inputs.package-path }}
+          black ${{ inputs.black-options }} ${{ inputs.package-path }}
       - name: Format the code using ruff
         if: (! inputs.use-black)
         run: >

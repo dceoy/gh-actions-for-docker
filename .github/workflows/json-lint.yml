@@ -23,13 +23,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
       - name: Install jsonlint
         run: |
           npm install -g jsonlint
       - name: Execute jsonlint
-        run: |
-          find ${{ inputs.search-path }} -type f -name '*.json' \
-            | xargs -t jsonlint -q
+        run: >
+          find ${{ inputs.search-path }} -type f -name '*.json'
+          -exec jsonlint -q {} \;

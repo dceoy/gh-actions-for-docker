@@ -1,0 +1,70 @@
+---
+name: Lint for GitHub Actions workflows
+on:
+  workflow_call:
+    inputs:
+      search-path:
+        required: false
+        type: string
+        description: Path to search for files
+        default: .github/workflows
+      go-version:
+        required: false
+        type: string
+        description: Go version to use
+        default: stable
+      python-version:
+        required: false
+        type: string
+        description: Python version to use
+        default: 3.x
+      use-shellcheck:
+        required: false
+        type: boolean
+        description: Whether to use ShellCheck
+        default: true
+      use-yamllint:
+        required: false
+        type: boolean
+        description: Whether to use yamllint
+        default: true
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: Install actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@latest
+      - name: Install ShellCheck
+        if: ${{ inputs.use-shellcheck }}
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install --no-install-recommends --no-install-suggests shellcheck
+      - name: Setup Python
+        if: ${{ inputs.use-yamllint }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install yamllint
+        if: ${{ inputs.use-yamllint }}
+        run: |
+          python -m pip install -U --no-cache-dir yamllint
+      - name: Execute actionlint
+        run: >
+          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \)
+          -exec actionlint {} \;
+      - name: Execute yamllint
+        if: ${{ inputs.use-yamllint }}
+        run: >
+          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \)
+          -exec yamllint -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}' {} \;

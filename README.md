@@ -22,6 +22,9 @@ Reusable workflows
   - [docker-lint-and-scan.yml](.github/workflows/docker-lint-and-scan.yml)
     - Lint and security scan for Dockerfile
 
+  - [github-actions-lint.yml](.github/workflows/github-actions-lint.yml)
+    - Lint for GitHub Actions workflows
+
   - [github-codeql-analysis.yml](.github/workflows/github-codeql-analysis.yml)
     - GitHub CodeQL Analysis
 

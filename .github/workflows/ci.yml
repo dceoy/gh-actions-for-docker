@@ -29,18 +29,17 @@ jobs:
     with:
       package-path: ./src
       python-version: 3.x
-      flake8-options: null
-      ruff-check-options: null
       mypy-options: --install-types --non-interactive
       bandit-options: --recursive
-  yaml-lint:
+  github-actions-lint:
     if: >
       github.event_name == 'push'
       || github.event_name == 'pull_request'
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
-    uses: ./.github/workflows/yaml-lint.yml
+    uses: ./.github/workflows/github-actions-lint.yml
     with:
-      search-path: .github/
+      search-path: .github/workflows
+      go-version: stable
       python-version: 3.x
   python-format:
     if: >
@@ -87,5 +86,4 @@ jobs:
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'release'
     uses: ./.github/workflows/github-release.yml
     with:
-      tag-name: null
       create-new-tag: false

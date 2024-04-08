@@ -20,6 +20,8 @@ jobs:
   build:
     name: Build the Python 🐍 distribution 📦
     runs-on: ubuntu-latest
+    outputs:
+      project-name: ${{ steps.read-project-name.outputs.project-name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,13 +33,14 @@ jobs:
         run: |
           python3 -m pip install -U --no-cache-dir build
       - name: Read the project name
+        id: read-project-name
         run: |
-          cat << EOF | python3  >> $GITHUB_OUTPUT
+          cat << EOF | python3
           import tomllib
           with open('pyproject.toml', 'rb') as f:
               name = tomllib.load(f)['project']['name']
           with open('${GITHUB_OUTPUT}', 'a') as f:
-              print(f'PROJECT_NAME={name}', file=f)
+              print(f'project-name={name}', file=f)
           EOF
       - name: Build a binary wheel and a source tarball
         run: |
@@ -72,8 +75,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release create '${{ github.ref_name }}' \
-            --repo '${{ github.repository }}' --generate-notes
+          gh release create '${{ github.ref_name }}' --repo '${{ github.repository }}' --generate-notes
       - name: Upload artifact signatures to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -81,17 +83,17 @@ jobs:
         # `dist/` contains the built packages, and the
         # sigstore-produced signatures and certificates.
         run: |
-          gh release upload '${{ github.ref_name }}' dist/** \
-            --repo '${{ github.repository }}'
+          gh release upload '${{ github.ref_name }}' dist/** --repo '${{ github.repository }}'
   publish-to-pypi:
     name: Publish the Python 🐍 distribution 📦 to PyPI
     if: startsWith(github.ref, 'refs/tags/')
     needs:
+      - build
       - github-release
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/${{ needs.build.outputs.PROJECT_NAME }}
+      url: https://pypi.org/p/${{ needs.build.outputs.project-name }}
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:
