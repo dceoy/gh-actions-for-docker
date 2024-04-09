@@ -154,7 +154,7 @@ jobs:
           echo "${TAGS}" | xargs -t -I {} cosign sign --yes "{}@${DIGEST}"
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.19.0
         with:
           scan-type: image
           image-ref: ${{ steps.build-and-push.outputs.imageid }}
