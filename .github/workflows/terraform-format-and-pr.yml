@@ -55,7 +55,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
-          base: ${{ github.ref }}
           branch: feature/terraform-format-${{ github.run_id }}
           title: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
           body: |
