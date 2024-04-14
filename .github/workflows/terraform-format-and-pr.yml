@@ -27,14 +27,17 @@ defaults:
     working-directory: .
 jobs:
   format-and-pr:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform-version: ${{ inputs.terraform-version }}
+          terraform_version: ${{ inputs.terraform-version }}
       - name: Install tflint
         if: inputs.lint-before-pr
         run: |
@@ -55,8 +58,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
-          branch: feature/terraform-format-${{ github.run_id }}
           title: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
+          branch: automatedpr/${{ github.head_ref }}
+          labels: automated pr
           body: |
             This PR contains the following updates:
 

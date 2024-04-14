@@ -67,10 +67,13 @@ defaults:
     working-directory: .
 jobs:
   format-and-pr:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -112,8 +115,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
-          branch: feature/python-package-format-${{ github.run_id }}
           title: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
+          branch: automatedpr/${{ github.head_ref }}
+          labels: automated pr
           body: |
             This PR contains the following updates:
 
