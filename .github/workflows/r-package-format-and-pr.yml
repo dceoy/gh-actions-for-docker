@@ -33,6 +33,9 @@ on:
         type: boolean
         description: Run lint before creating a pull request
         default: true
+permissions:
+  contents: write
+  pull-requests: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -89,6 +92,7 @@ jobs:
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}
           branch: feature/r-package-format-${{ github.run_id }}
           title: ${{ steps.commit-message.outputs.COMMIT_MESSAGE }}

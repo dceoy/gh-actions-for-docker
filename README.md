@@ -13,6 +13,9 @@ Reusable workflows
   - [aws-cloudformation-lint.yml](.github/workflows/aws-cloudformation-lint.yml)
     - Lint for AWS CloudFormation
 
+  - [dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml)
+    - Dependabot auto-merge
+
   - [docker-build-and-push.yml](.github/workflows/docker-build-and-push.yml)
     - Docker image build and push
 

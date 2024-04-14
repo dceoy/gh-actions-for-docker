@@ -87,3 +87,7 @@ jobs:
     uses: ./.github/workflows/github-release.yml
     with:
       create-new-tag: false
+  dependabot-auto-merge:
+    if: >
+      github.event_name == 'pull_request'
+    uses: ./.github/workflows/dependabot-auto-merge.yml
