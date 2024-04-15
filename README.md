@@ -67,5 +67,8 @@ Reusable workflows
   - [terraform-lint-and-scan.yml](.github/workflows/terraform-lint-and-scan.yml)
     - Lint and security scan for Terraform
 
+  - [toml-lint.yml](.github/workflows/toml-lint.yml)
+    - Lint for TOML
+
   - [yaml-lint.yml](.github/workflows/yaml-lint.yml)
     - Lint for YAML

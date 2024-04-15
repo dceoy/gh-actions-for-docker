@@ -1,0 +1,37 @@
+---
+name: Lint for TOML
+on:
+  workflow_call:
+    inputs:
+      search-path:
+        required: false
+        type: string
+        description: Path to search for files
+        default: .
+      go-version:
+        required: false
+        type: string
+        description: Go version to use
+        default: stable
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+      - name: Install tomll
+        run: |
+          go install github.com/pelletier/go-toml/v2/cmd/tomll@latest
+      - name: Execute tomllint
+        run: >
+          find ${{ inputs.search-path }} -type f -name '*.toml'
+          -exec tomll {} \;

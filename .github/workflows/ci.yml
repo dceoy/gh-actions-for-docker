@@ -41,6 +41,15 @@ jobs:
       search-path: .github/workflows
       go-version: stable
       python-version: 3.x
+  toml-lint:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+    uses: ./.github/workflows/toml-lint.yml
+    with:
+      search-path: .github/workflows
+      go-version: stable
   python-format:
     if: >
       github.event_name == 'pull_request'
@@ -93,6 +102,7 @@ jobs:
     needs:
       - python-lint-and-scan
       - github-actions-lint
+      - toml-lint
       - python-format
       - docker-lint-and-scan
       - github-codeql-analysis
