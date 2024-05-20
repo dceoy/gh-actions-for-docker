@@ -61,6 +61,9 @@ Reusable workflows
   - [shell-lint.yml](.github/workflows/shell-lint.yml)
     - Lint for Shell
 
+  - [terraform-deploy-to-aws.yml](.github/workflows/terraform-deploy-to-aws.yml)
+    - Deployment of AWS resources using Terraform
+
   - [terraform-format-and-pr.yml](.github/workflows/terraform-format-and-pr.yml)
     - Formatter for Terraform
 

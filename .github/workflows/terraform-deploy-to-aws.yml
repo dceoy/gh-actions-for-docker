@@ -1,0 +1,131 @@
+---
+name: Deployment of AWS resources using Terraform
+on:
+  workflow_call:
+    inputs:
+      aws-iam-role-to-assume:
+        required: true
+        type: string
+        description: AWS IAM role ARN to assume
+      aws-region:
+        required: false
+        type: string
+        description: AWS region to use
+        default: us-east-1
+      working-directory:
+        required: false
+        type: string
+        description: Working directory for Terraform or Terragrunt
+        default: .
+      apply:
+        required: false
+        type: boolean
+        description: Whether to apply the changes
+        default: false
+      terraform-init-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform init
+        default: null
+      terraform-validate-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform validate
+        default: null
+      terraform-plan-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform plan
+        default: null
+      terraform-apply-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform apply
+        default: -auto-approve
+      terragrunt-run-all-options:
+        required: false
+        type: string
+        description: Additional options to pass to terragrunt run-all
+        default: null
+      terraform-version:
+        required: false
+        type: string
+        description: Terraform version to use
+        default: latest
+      terragrunt-version:
+        required: false
+        type: string
+        description: Terragrunt version to use
+        default: null
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume }}
+          aws-region: ${{ inputs.aws-region }}
+          role-session-name: github-actions-${{ github.run_id }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+      - name: Install Terragrunt
+        if: inputs.terragrunt-version != null
+        env:
+          TG_VERSION: ${{ inputs.terragrunt-version }}
+        run: |
+          if [[ "${TG_VERSION}" == 'latest' ]]; then
+            url="$( \
+              curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+                | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+            )"
+          else
+            url="https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64"
+          fi
+          curl -sSL -o /usr/local/bin/terragrunt "${url}"
+          chmod +x /usr/local/bin/terragrunt
+      - name: Prepare working directories for Terraform
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if ${{ inputs.terragrunt-version != null }}; then
+            terragrunt run-all init ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-init-options }}
+          else
+            terraform init ${{ inputs.terraform-init-options }}
+          fi
+      - name: Check whether the configuration of Terraform is valid
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if ${{ inputs.terragrunt-version != null }}; then
+            terragrunt run-all validate ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-validate-options }}
+          else
+            terraform validate ${{ inputs.terraform-validate-options }}
+          fi
+      - name: Show changes required by the current configuration of Terraform
+        if: (! inputs.apply)
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if ${{ inputs.terragrunt-version != null }}; then
+            terragrunt run-all plan ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-plan-options }}
+          else
+            terraform plan ${{ inputs.terraform-plan-options }}
+          fi
+      - name: Run terragrunt run-all apply
+        if: inputs.apply
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if ${{ inputs.terragrunt-version != null }}; then
+            terragrunt run-all apply ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-apply-options }}
+          else
+            terraform apply ${{ inputs.terraform-apply-options }}
+          fi

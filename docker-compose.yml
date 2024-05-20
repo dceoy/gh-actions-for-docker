@@ -1,6 +1,4 @@
 ---
-version: '3'
-
 services:
   build-readme-md:
     container_name: build-readme-md
