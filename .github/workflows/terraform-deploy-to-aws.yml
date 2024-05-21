@@ -4,15 +4,21 @@ on:
   workflow_call:
     inputs:
       aws-iam-role-to-assume:
-        required: true
+        required: false
         type: string
         description: AWS IAM role ARN to assume
+        default: null
       aws-region:
         required: false
         type: string
         description: AWS region to use
         default: us-east-1
-      working-directory:
+      aws-profile-env-file:
+        required: false
+        type: string
+        description: Path to the file containing the AWS profile environment variables
+        default: null
+      command-working-directory:
         required: false
         type: string
         description: Working directory for Terraform or Terragrunt
@@ -20,8 +26,13 @@ on:
       apply:
         required: false
         type: boolean
-        description: Whether to apply the changes
+        description: Create or update infrastructure
         default: false
+      terraform-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform
+        default: null
       terraform-init-options:
         required: false
         type: string
@@ -57,6 +68,31 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      use-docker:
+        required: false
+        type: boolean
+        description: Use Docker
+        default: false
+      docker-metadata-action-images:
+        required: false
+        type: string
+        description: Images for the Docker metadata action
+        default: ${{ github.repository }}
+      docker-metadata-action-tags:
+        required: false
+        type: string
+        description: Tags for the Docker metadata action
+        default: |
+          type=sha
+          type=sha,format=long
+          type=raw,value=latest
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=tag
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -70,12 +106,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ inputs.aws-iam-role-to-assume }}
-          aws-region: ${{ inputs.aws-region }}
-          role-session-name: github-actions-${{ github.run_id }}
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -95,37 +125,66 @@ jobs:
           fi
           curl -sSL -o /usr/local/bin/terragrunt "${url}"
           chmod +x /usr/local/bin/terragrunt
+      - name: Set up QEMU
+        if: inputs.use-docker
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        if: inputs.use-docker
+        uses: docker/setup-buildx-action@v3
+      - name: Extract Docker metadata
+        if: inputs.use-docker
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ inputs.docker-metadata-action-images }}
+          tags: ${{ inputs.docker-metadata-action-tags }}
+      - name: Set AWS profile environment variables
+        id: aws-profile-env
+        run: |
+          if [[ -n "${{ inputs.aws-profile-env-file }}" ]]; then
+            source ${{ inputs.aws-profile-env-file }}
+          else
+            ROLE_ARN="${{ inputs.aws-iam-role-to-assume }}"
+            REGION="${{ inputs.aws-region }}"
+          fi
+          echo "ROLE_ARN=${ROLE_ARN}" >> "${GITHUB_OUTPUT}"
+          echo "REGION=${REGION}" >> "${GITHUB_OUTPUT}"
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.aws-profile-env.outputs.ROLE_ARN }}
+          aws-region: ${{ steps.aws-profile-env.outputs.REGION }}
+          role-session-name: github-actions-${{ github.run_id }}
       - name: Prepare working directories for Terraform
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all init ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-init-options }}
           else
-            terraform init ${{ inputs.terraform-init-options }}
+            terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
           fi
       - name: Check whether the configuration of Terraform is valid
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all validate ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-validate-options }}
           else
-            terraform validate ${{ inputs.terraform-validate-options }}
+            terraform ${{ inputs.terraform-options }} validate ${{ inputs.terraform-validate-options }}
           fi
       - name: Show changes required by the current configuration of Terraform
         if: (! inputs.apply)
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all plan ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-plan-options }}
           else
-            terraform plan ${{ inputs.terraform-plan-options }}
+            terraform ${{ inputs.terraform-options }} plan ${{ inputs.terraform-plan-options }}
           fi
-      - name: Run terragrunt run-all apply
+      - name: Create or update infrastructure using Terraform
         if: inputs.apply
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all apply ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-apply-options }}
           else
-            terraform apply ${{ inputs.terraform-apply-options }}
+            terraform ${{ inputs.terraform-options }} apply ${{ inputs.terraform-apply-options }}
           fi
