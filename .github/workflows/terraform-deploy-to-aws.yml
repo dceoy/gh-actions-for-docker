@@ -77,7 +77,7 @@ on:
         required: false
         type: string
         description: Images for the Docker metadata action
-        default: ${{ github.repository }}
+        default: null
       docker-metadata-action-tags:
         required: false
         type: string
