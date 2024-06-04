@@ -52,12 +52,12 @@ on:
         required: false
         type: string
         description: Additional options to pass to terraform apply
-        default: -auto-approve
+        default: null   # -auto-approve
       terragrunt-run-all-options:
         required: false
         type: string
         description: Additional options to pass to terragrunt run-all
-        default: null
+        default: null   # --terragrunt-non-interactive
       terraform-version:
         required: false
         type: string
