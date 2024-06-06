@@ -6,12 +6,12 @@ on:
       registry:
         required: false
         type: string
-        description: The registry to push the image to
+        description: Registry to push the image to
         default: docker.io  # { docker.io, ghcr.io }
       image-name:
         required: false
         type: string
-        description: The name of the image to push
+        description: Name of the image to push
         default: ${{ github.repository }}
       context:
         required: false
@@ -88,6 +88,16 @@ on:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
+      image-artifact-name:
+        required: false
+        type: string
+        description: Image tarball artifact name to upload
+        default: null
+      image-artifact-retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
     secrets:
       DOCKER_USER:
         required: false
@@ -149,6 +159,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Save the image as a tarball
+        if: inputs.image-artifact-name != null
+        run: >
+          echo "${{ steps.meta.outputs.tags }}"
+          | xargs -t docker save -o "${{ inputs.image-artifact-name }}.tar"
+      - name: Upload the image tarball
+        if: inputs.image-artifact-name != null
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.image-artifact-name }}
+          path: ${{ inputs.image-artifact-name }}.tar
+          retention-days: ${{ inputs.image-artifact-retention-days }}
       - name: Sign the images with GitHub OIDC Token
         if: inputs.cosign && inputs.push
         env:

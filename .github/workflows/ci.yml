@@ -79,6 +79,7 @@ jobs:
       context: ./src
       file: ./src/Dockerfile
       push: true
+      image-artifact-name: docker-image
     secrets:
       DOCKER_USER: ${{ github.actor }}
       DOCKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
