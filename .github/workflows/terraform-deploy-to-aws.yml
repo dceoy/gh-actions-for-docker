@@ -93,6 +93,11 @@ on:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
+      docker-image-artifact-name:
+        required: false
+        type: string
+        description: Docker image tarball artifact name to download
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -104,6 +109,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Download the image tarball artifact
+        if: inputs.use-docker && inputs.docker-image-artifact-name != null
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.docker-image-artifact-name }}
+          path: /tmp/
+      - name: Load the image tarball
+        if: inputs.use-docker && inputs.docker-image-artifact-name != null
+        run: >
+          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Terraform

@@ -112,8 +112,6 @@ defaults:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      DIST_DIR: /tmp/docker-image-dist-${{ github.run_id }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -161,15 +159,17 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Save the image as a tarball
         if: inputs.image-artifact-name != null
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
         run: >
-          echo "${{ steps.meta.outputs.tags }}"
-          | xargs -t docker save -o "${{ inputs.image-artifact-name }}.tar"
+          echo "${TAGS}" | xargs -t docker save -o "${IMAGE_TAR}"
       - name: Upload the image tarball
         if: inputs.image-artifact-name != null
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.image-artifact-name }}
-          path: ${{ inputs.image-artifact-name }}.tar
+          path: /tmp/${{ inputs.image-artifact-name }}.tar
           retention-days: ${{ inputs.image-artifact-retention-days }}
       - name: Sign the images with GitHub OIDC Token
         if: inputs.cosign && inputs.push
