@@ -1,0 +1,40 @@
+---
+name: PR-agent
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+  issue_comment:
+    types:
+      - created
+      - edited
+      - deleted
+  workflow_call:
+    secrets:
+      OPENAI_API_KEY:
+        required: true
+        description: OpenAI API key
+      OPENAI_ORGANIZATION:
+        required: false
+        description: OpenAI organization
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  pr-agent:
+    if: ${{ github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    name: Run PR-agent on pull requests
+    steps:
+      - name: Run PR-agent
+        uses: Codium-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ORG: ${{ secrets.OPENAI_ORGANIZATION }}
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
+          GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: true
