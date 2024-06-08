@@ -40,6 +40,9 @@ Reusable workflows
   - [microsoft-defender-for-devops.yml](.github/workflows/microsoft-defender-for-devops.yml)
     - Microsoft Defender for Devops
 
+  - [pr-agent.yml](.github/workflows/pr-agent.yml)
+    - PR-agent
+
   - [python-package-format-and-pr.yml](.github/workflows/python-package-format-and-pr.yml)
     - Formatter for Python
 
