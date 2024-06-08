@@ -18,6 +18,7 @@ on:
         type: choice
         options:
           - lint
+          - analyze
           - format
           - build
           - release
@@ -90,8 +91,7 @@ jobs:
   github-codeql-analysis:
     if: >
       github.event_name == 'push'
-      || github.event_name == 'pull_request'
-      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'analyze')
     uses: ./.github/workflows/github-codeql-analysis.yml
     with:
       language: python
