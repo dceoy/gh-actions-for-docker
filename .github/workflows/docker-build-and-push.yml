@@ -112,6 +112,8 @@ defaults:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -161,7 +163,6 @@ jobs:
         if: inputs.image-artifact-name != null
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
-          IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
         run: >
           echo "${TAGS}" | xargs -t docker save -o "${IMAGE_TAR}"
       - name: Upload the image tarball
@@ -169,7 +170,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.image-artifact-name }}
-          path: /tmp/${{ inputs.image-artifact-name }}.tar
+          path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.image-artifact-retention-days }}
       - name: Sign the images with GitHub OIDC Token
         if: inputs.cosign && inputs.push
