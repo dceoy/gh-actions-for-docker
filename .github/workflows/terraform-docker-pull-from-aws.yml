@@ -120,6 +120,8 @@ jobs:
           role-to-assume: ${{ steps.aws-profile-env.outputs.ROLE_ARN }}
           aws-region: ${{ steps.aws-profile-env.outputs.REGION }}
           role-session-name: github-actions-${{ github.run_id }}
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
       - name: Prepare working directories for Terraform
         working-directory: ${{ inputs.command-working-directory }}
         run: |
