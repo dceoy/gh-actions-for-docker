@@ -1,28 +1,53 @@
 ---
-name: Pull of the Docker images deployed to AWS using Terraform
+name: Docker image pull and resource deployment to AWS using Terraform
 on:
   workflow_call:
     inputs:
-      aws-iam-role-to-assume:
+      target-aws-iam-role-to-assume:
         required: false
         type: string
-        description: AWS IAM role ARN to assume
+        description: Target AWS IAM role ARN to assume
         default: null
-      aws-region:
+      target-aws-region:
         required: false
         type: string
-        description: AWS region to use
+        description: Target AWS region to use
         default: us-east-1
-      aws-profile-env-file:
+      target-aws-profile-env-file:
         required: false
         type: string
-        description: Path to the file containing the AWS profile environment variables
+        description: Path to the file containing the target AWS profile environment variables
         default: null
-      command-working-directory:
+      target-command-working-directory:
         required: false
         type: string
-        description: Working directory for Terraform or Terragrunt
+        description: Target working directory for Terraform or Terragrunt
         default: .
+      source-aws-iam-role-to-assume:
+        required: false
+        type: string
+        description: Source AWS IAM role ARN to assume
+        default: null
+      source-aws-region:
+        required: false
+        type: string
+        description: Source AWS region to use
+        default: us-east-1
+      source-aws-profile-env-file:
+        required: false
+        type: string
+        description: Path to the file containing the source AWS profile environment variables
+        default: null
+      source-command-working-directory:
+        required: false
+        type: string
+        description: Source working directory for Terraform or Terragrunt
+        default: .
+      apply:
+        required: false
+        type: boolean
+        description: Create or update infrastructure
+        default: false
       terraform-options:
         required: false
         type: string
@@ -33,16 +58,31 @@ on:
         type: string
         description: Additional options to pass to terraform init
         default: null
-      terraform-version:
+      terraform-validate-options:
         required: false
         type: string
-        description: Terraform version to use
-        default: latest
+        description: Additional options to pass to terraform validate
+        default: null
+      terraform-plan-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform plan
+        default: null
+      terraform-apply-options:
+        required: false
+        type: string
+        description: Additional options to pass to terraform apply
+        default: null   # -auto-approve
       terragrunt-options:
         required: false
         type: string
         description: Additional options to pass to terragrunt
         default: null   # --terragrunt-non-interactive
+      terraform-version:
+        required: false
+        type: string
+        description: Terraform version to use
+        default: latest
       terragrunt-version:
         required: false
         type: string
@@ -53,11 +93,31 @@ on:
         type: string
         description: Terraform output variable pattern for the Docker image URI
         default: image_uri
+      docker-metadata-action-images:
+        required: false
+        type: string
+        description: Images for the Docker metadata action
+        default: null
+      docker-metadata-action-tags:
+        required: false
+        type: string
+        description: Tags for the Docker metadata action
+        default: |
+          type=sha
+          type=sha,format=long
+          type=raw,value=latest
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=tag
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
       docker-image-artifact-name:
         required: false
         type: string
         description: Docker image tarball artifact name to download
-        default: null
+        default: docker-image
       docker-image-artifact-retention-days:
         required: false
         type: number
@@ -71,7 +131,7 @@ permissions:
   id-token: write   # This is required for requesting the JWT
   contents: read    # This is required for actions/checkout
 jobs:
-  pull-and-save:
+  pull:
     runs-on: ubuntu-latest
     env:
       IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
@@ -101,24 +161,24 @@ jobs:
       - name: Set AWS profile environment variables
         id: aws-profile-env
         run: |
-          if [[ -n "${{ inputs.aws-profile-env-file }}" ]]; then
-            source ${{ inputs.aws-profile-env-file }}
+          if [[ -n "${{ inputs.source-aws-profile-env-file }}" ]]; then
+            source ${{ inputs.source-aws-profile-env-file }}
           else
-            ROLE_ARN="${{ inputs.aws-iam-role-to-assume }}"
-            REGION="${{ inputs.aws-region }}"
+            ROLE_ARN="${{ inputs.source-aws-iam-role-to-assume }}"
+            REGION="${{ inputs.source-aws-region }}"
           fi
           echo "ROLE_ARN=${ROLE_ARN}" >> "${GITHUB_OUTPUT}"
           echo "REGION=${REGION}" >> "${GITHUB_OUTPUT}"
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.aws-profile-env.outputs.ROLE_ARN }}
-          aws-region: ${{ steps.aws-profile-env.outputs.REGION }}
+          role-to-assume: ${{ steps.source-aws-profile-env.outputs.ROLE_ARN }}
+          aws-region: ${{ steps.source-aws-profile-env.outputs.REGION }}
           role-session-name: github-actions-${{ github.run_id }}
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
       - name: Prepare working directories for Terraform
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.source-command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
@@ -126,7 +186,7 @@ jobs:
             terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
           fi
       - name: Retrieve the ECR repository URLs using Terraform
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.source-command-working-directory }}
         run: |
           {
             if ${{ inputs.terragrunt-version != null }}; then
@@ -143,9 +203,30 @@ jobs:
         run: |
           xargs -t docker save -o "${IMAGE_TAR}" < "${IMAGE_URI_LIST_TXT}"
       - name: Upload the image tarball
-        if: inputs.docker-image-artifact-name != null
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.docker-image-artifact-name }}
           path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+  deploy:
+    needs:
+      - pull
+    uses: ./.github/workflows/terraform-deploy-to-aws.yml
+    with:
+      aws-iam-role-to-assume: ${{ inputs.target-aws-iam-role-to-assume }}
+      aws-region: ${{ inputs.target-aws-region }}
+      aws-profile-env-file: ${{ inputs.target-aws-profile-env-file }}
+      command-working-directory: ${{ inputs.target-command-working-directory }}
+      apply: ${{ inputs.apply }}
+      terraform-options: ${{ inputs.terraform-apply-options }}
+      terraform-init-options: ${{ inputs.terragrunt-init-options }}
+      terraform-validate-options: ${{ inputs.terraform-validate-options }}
+      terraform-plan-options: ${{ inputs.terraform-plan-options }}
+      terraform-apply-options: ${{ inputs.terraform-apply-options }}
+      terragrunt-options: ${{ inputs.terragrunt-options }}
+      terraform-version: ${{ inputs.terraform-version }}
+      terragrunt-version: ${{ inputs.terragrunt-version }}
+      use-docker: true
+      docker-metadata-action-images: ${{ inputs.docker-metadata-action-images }}
+      docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
+      docker-image-artifact-name: ${{ inputs.docker-image-artifact-name }}

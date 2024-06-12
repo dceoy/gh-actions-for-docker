@@ -53,10 +53,10 @@ on:
         type: string
         description: Additional options to pass to terraform apply
         default: null   # -auto-approve
-      terragrunt-run-all-options:
+      terragrunt-options:
         required: false
         type: string
-        description: Additional options to pass to terragrunt run-all
+        description: Additional options to pass to terragrunt
         default: null   # --terragrunt-non-interactive
       terraform-version:
         required: false
@@ -117,8 +117,8 @@ jobs:
           path: /tmp/
       - name: Load the image tarball
         if: inputs.use-docker && inputs.docker-image-artifact-name != null
-        run: >
-          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}
+        run: |
+          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}.tar
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Terraform
@@ -173,7 +173,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all init ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-init-options }}
+            terragrunt run-all init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
           else
             terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
           fi
@@ -181,7 +181,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all validate ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-validate-options }}
+            terragrunt run-all validate ${{ inputs.terragrunt-options }} ${{ inputs.terraform-validate-options }}
           else
             terraform ${{ inputs.terraform-options }} validate ${{ inputs.terraform-validate-options }}
           fi
@@ -190,7 +190,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all plan ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-plan-options }}
+            terragrunt run-all plan ${{ inputs.terragrunt-options }} ${{ inputs.terraform-plan-options }}
           else
             terraform ${{ inputs.terraform-options }} plan ${{ inputs.terraform-plan-options }}
           fi
@@ -199,7 +199,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all apply ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-apply-options }}
+            terragrunt run-all apply ${{ inputs.terragrunt-options }} ${{ inputs.terraform-apply-options }}
           else
             terraform ${{ inputs.terraform-options }} apply ${{ inputs.terraform-apply-options }}
           fi

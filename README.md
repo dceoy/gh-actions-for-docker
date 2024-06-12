@@ -67,8 +67,8 @@ Reusable workflows
   - [terraform-deploy-to-aws.yml](.github/workflows/terraform-deploy-to-aws.yml)
     - Deployment of AWS resources using Terraform
 
-  - [terraform-docker-pull-from-aws.yml](.github/workflows/terraform-docker-pull-from-aws.yml)
-    - Pull of the Docker images deployed to AWS using Terraform
+  - [terraform-docker-pull-and-deploy-to-aws.yml](.github/workflows/terraform-docker-pull-and-deploy-to-aws.yml)
+    - Docker image pull and resource deployment to AWS using Terraform
 
   - [terraform-format-and-pr.yml](.github/workflows/terraform-format-and-pr.yml)
     - Formatter for Terraform
