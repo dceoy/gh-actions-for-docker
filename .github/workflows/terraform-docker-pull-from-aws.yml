@@ -33,11 +33,6 @@ on:
         type: string
         description: Additional options to pass to terraform init
         default: null
-      terraform-output-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform output
-        default: null
       terraform-version:
         required: false
         type: string
@@ -135,13 +130,11 @@ jobs:
         run: |
           {
             if ${{ inputs.terragrunt-version != null }}; then
-              terragrunt output ${{ inputs.terragrunt-options }} ${{ inputs.terraform-output-options }}
+              terragrunt output ${{ inputs.terragrunt-options }} -json
             else
-              terraform ${{ inputs.terraform-options }} output ${{ inputs.terraform-output-options }}
+              terraform ${{ inputs.terraform-options }}  output -json
             fi
-          } \
-            | grep -e '^[^ ]*${{ inputs.terraform-output-pattern-for-docker-image-uri }}[^ ]* = ' \
-            | cut -d '"' -f 2 \
+          } | jq -r 'with_entries(select(.key | contains("${{ inputs.terraform-output-pattern-for-docker-image-uri }}")))[].value' \
             | tee "${IMAGE_URI_LIST_TXT}"
       - name: Pull the Docker images
         run: |
