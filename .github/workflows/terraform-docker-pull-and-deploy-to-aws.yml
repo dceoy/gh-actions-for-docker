@@ -123,6 +123,11 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      docker-primary-image-tag:
+        required: false
+        type: string
+        description: Primary Docker image tag to pull
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -196,6 +201,14 @@ jobs:
             fi
           } | jq -r 'with_entries(select(.key | contains("${{ inputs.terraform-output-pattern-for-docker-image-uri }}")))[].value' \
             | tee "${IMAGE_URI_LIST_TXT}"
+      - name: Update the image uri list with the primary image tag
+        if: inputs.docker-primary-image-tag != null
+        run: |
+          cut -d ':' -f 1 "${IMAGE_URI_LIST_TXT}" \
+            | sort -u \
+            | xargs -I{} echo "{}:${{ inputs.docker-primary-image-tag }}" \
+            | tee "${IMAGE_URI_LIST_TXT}.tmp.txt"
+          mv "${IMAGE_URI_LIST_TXT}.tmp.txt" "${IMAGE_URI_LIST_TXT}"
       - name: Pull the Docker images
         run: |
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
@@ -230,3 +243,4 @@ jobs:
       docker-metadata-action-images: ${{ inputs.docker-metadata-action-images }}
       docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
       docker-image-artifact-name: ${{ inputs.docker-image-artifact-name }}
+      environment-variable-to-set: DOCKER_PRIMARY_IMAGE_TAG=${{ inputs.docker-primary-image-tag }}

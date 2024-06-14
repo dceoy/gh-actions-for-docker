@@ -98,6 +98,11 @@ on:
         type: string
         description: Docker image tarball artifact name to download
         default: null
+      environment-variables-to-set:
+        required: false
+        type: string
+        description: Environment variables to set (e.g., "FOO=bar")
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -108,7 +113,13 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
     steps:
+      - name: Set environment variables
+        if: inputs.environment-variables-to-set != null
+        run: |
+          echo "${{ inputs.environment-variables-to-set }}" >> "${GITHUB_ENV}"
       - name: Download the image tarball artifact
         if: inputs.use-docker && inputs.docker-image-artifact-name != null
         uses: actions/download-artifact@v4
@@ -118,7 +129,7 @@ jobs:
       - name: Load the image tarball
         if: inputs.use-docker && inputs.docker-image-artifact-name != null
         run: |
-          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}.tar
+          docker load -i "${IMAGE_TAR}"
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Terraform
