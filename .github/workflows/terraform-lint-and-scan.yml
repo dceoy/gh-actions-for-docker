@@ -39,17 +39,16 @@ jobs:
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
-          TG_VERSION: ${{ inputs.terragrunt-version }}
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
-          if [[ "${TG_VERSION}" == 'latest' ]]; then
-            url="$( \
-              curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-                | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
-            )"
+          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
+            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+              | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
-            url="https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64"
+            curl -sSL -o /usr/local/bin/terragrunt \
+              https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
           fi
-          curl -sSL -o /usr/local/bin/terragrunt "${url}"
           chmod +x /usr/local/bin/terragrunt
       - name: Lint the code using terraform fmt
         run: |

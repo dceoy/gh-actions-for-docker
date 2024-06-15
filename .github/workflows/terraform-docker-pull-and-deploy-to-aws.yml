@@ -3,6 +3,15 @@ name: Docker image pull and resource deployment to AWS using Terraform
 on:
   workflow_call:
     inputs:
+      docker-image-names:
+        required: true
+        type: string
+        description: Docker image names to pull (separated by spaces or returns)
+      new-docker-image-tags-json:
+        required: false
+        type: string
+        description: JSON object containing new tags to apply to Docker images
+        default: null
       target-aws-iam-role-to-assume:
         required: false
         type: string
@@ -18,11 +27,6 @@ on:
         type: string
         description: Path to the file containing the target AWS profile environment variables
         default: null
-      target-command-working-directory:
-        required: false
-        type: string
-        description: Target working directory for Terraform or Terragrunt
-        default: .
       source-aws-iam-role-to-assume:
         required: false
         type: string
@@ -38,10 +42,10 @@ on:
         type: string
         description: Path to the file containing the source AWS profile environment variables
         default: null
-      source-command-working-directory:
+      command-working-directory:
         required: false
         type: string
-        description: Source working directory for Terraform or Terragrunt
+        description: Working directory for Terraform or Terragrunt
         default: .
       apply:
         required: false
@@ -137,90 +141,15 @@ permissions:
   contents: read    # This is required for actions/checkout
 jobs:
   pull:
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
-      IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ inputs.terraform-version }}
-      - name: Install Terragrunt
-        if: inputs.terragrunt-version != null
-        env:
-          TG_VERSION: ${{ inputs.terragrunt-version }}
-        run: |
-          if [[ "${TG_VERSION}" == 'latest' ]]; then
-            url="$( \
-              curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-                | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
-            )"
-          else
-            url="https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64"
-          fi
-          curl -sSL -o /usr/local/bin/terragrunt "${url}"
-          chmod +x /usr/local/bin/terragrunt
-      - name: Set AWS profile environment variables
-        id: aws-profile-env
-        run: |
-          if [[ -n "${{ inputs.source-aws-profile-env-file }}" ]]; then
-            source ${{ inputs.source-aws-profile-env-file }}
-          else
-            ROLE_ARN="${{ inputs.source-aws-iam-role-to-assume }}"
-            REGION="${{ inputs.source-aws-region }}"
-          fi
-          echo "ROLE_ARN=${ROLE_ARN}" >> "${GITHUB_OUTPUT}"
-          echo "REGION=${REGION}" >> "${GITHUB_OUTPUT}"
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ steps.source-aws-profile-env.outputs.ROLE_ARN }}
-          aws-region: ${{ steps.source-aws-profile-env.outputs.REGION }}
-          role-session-name: github-actions-${{ github.run_id }}
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Prepare working directories for Terraform
-        working-directory: ${{ inputs.source-command-working-directory }}
-        run: |
-          if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
-          else
-            terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
-          fi
-      - name: Retrieve the ECR repository URLs using Terraform
-        working-directory: ${{ inputs.source-command-working-directory }}
-        run: |
-          {
-            if ${{ inputs.terragrunt-version != null }}; then
-              terragrunt output ${{ inputs.terragrunt-options }} -json
-            else
-              terraform ${{ inputs.terraform-options }}  output -json
-            fi
-          } | jq -r 'with_entries(select(.key | contains("${{ inputs.terraform-output-pattern-for-docker-image-uri }}")))[].value' \
-            | tee "${IMAGE_URI_LIST_TXT}"
-      - name: Update the image uri list with the primary image tag
-        if: inputs.docker-primary-image-tag != null
-        run: |
-          cut -d ':' -f 1 "${IMAGE_URI_LIST_TXT}" \
-            | sort -u \
-            | xargs -I{} echo "{}:${{ inputs.docker-primary-image-tag }}" \
-            | tee "${IMAGE_URI_LIST_TXT}.tmp.txt"
-          mv "${IMAGE_URI_LIST_TXT}.tmp.txt" "${IMAGE_URI_LIST_TXT}"
-      - name: Pull the Docker images
-        run: |
-          xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
-      - name: Save the Docker images to an image tarball
-        run: |
-          xargs -t docker save -o "${IMAGE_TAR}" < "${IMAGE_URI_LIST_TXT}"
-      - name: Upload the image tarball
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.docker-image-artifact-name }}
-          path: ${{ env.IMAGE_TAR }}
-          retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+    uses: ./.github/workflows/docker-pull-from-aws.yml
+    with:
+      image-names: ${{ inputs.docker-images }}
+      new-image-tags-json: ${{ inputs.new-docker-image-tags-json }}
+      aws-iam-role-to-assume: ${{ inputs.source-aws-iam-role-to-assume }}
+      aws-region: ${{ inputs.source-aws-region }}
+      aws-profile-env-file: ${{ inputs.source-aws-profile-env-file }}
+      image-artifact-name: ${{ inputs.docker-image-artifact-name }}
+      image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
   deploy:
     needs:
       - pull
@@ -229,7 +158,7 @@ jobs:
       aws-iam-role-to-assume: ${{ inputs.target-aws-iam-role-to-assume }}
       aws-region: ${{ inputs.target-aws-region }}
       aws-profile-env-file: ${{ inputs.target-aws-profile-env-file }}
-      command-working-directory: ${{ inputs.target-command-working-directory }}
+      command-working-directory: ${{ inputs.command-working-directory }}
       apply: ${{ inputs.apply }}
       terraform-options: ${{ inputs.terraform-apply-options }}
       terraform-init-options: ${{ inputs.terragrunt-init-options }}

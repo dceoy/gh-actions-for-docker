@@ -16,7 +16,7 @@ on:
       aws-profile-env-file:
         required: false
         type: string
-        description: Path to the file containing the AWS profile environment variables
+        description: Environment file containing AWS IAM role ARN (ROLE_ARN) and region (REGION)
         default: null
       command-working-directory:
         required: false
@@ -139,17 +139,16 @@ jobs:
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
-          TG_VERSION: ${{ inputs.terragrunt-version }}
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
-          if [[ "${TG_VERSION}" == 'latest' ]]; then
-            url="$( \
-              curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-                | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
-            )"
+          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
+            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+              | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
-            url="https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64"
+            curl -sSL -o /usr/local/bin/terragrunt \
+              https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
           fi
-          curl -sSL -o /usr/local/bin/terragrunt "${url}"
           chmod +x /usr/local/bin/terragrunt
       - name: Set up QEMU
         if: inputs.use-docker
@@ -164,21 +163,19 @@ jobs:
           images: ${{ inputs.docker-metadata-action-images }}
           tags: ${{ inputs.docker-metadata-action-tags }}
       - name: Set AWS profile environment variables
+        if: inputs.aws-profile-env-file != null
         id: aws-profile-env
         run: |
-          if [[ -n "${{ inputs.aws-profile-env-file }}" ]]; then
-            source ${{ inputs.aws-profile-env-file }}
+          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
           else
-            ROLE_ARN="${{ inputs.aws-iam-role-to-assume }}"
-            REGION="${{ inputs.aws-region }}"
+            echo ROLE_ARN=${{ inputs.aws-iam-role-to-assume }} >> "${GITHUB_OUTPUT}"
+            echo REGION=${{ inputs.aws-region }} >> "${GITHUB_OUTPUT}"
           fi
-          echo "ROLE_ARN=${ROLE_ARN}" >> "${GITHUB_OUTPUT}"
-          echo "REGION=${REGION}" >> "${GITHUB_OUTPUT}"
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.aws-profile-env.outputs.ROLE_ARN }}
-          aws-region: ${{ steps.aws-profile-env.outputs.REGION }}
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
+          aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
           role-session-name: github-actions-${{ github.run_id }}
       - name: Prepare working directories for Terraform
         working-directory: ${{ inputs.command-working-directory }}

@@ -25,6 +25,9 @@ Reusable workflows
   - [docker-lint-and-scan.yml](.github/workflows/docker-lint-and-scan.yml)
     - Lint and security scan for Dockerfile
 
+  - [docker-pull-from-aws.yml](.github/workflows/docker-pull-from-aws.yml)
+    - Docker image pull from AWS
+
   - [github-actions-lint.yml](.github/workflows/github-actions-lint.yml)
     - Lint for GitHub Actions workflows
 
