@@ -87,17 +87,14 @@ jobs:
           lintr::lint_dir(path = "${{ inputs.package-path }}")
       - name: Create output parameters
         id: parameters
+        env:
+          PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
-          if [[ -n "${{ github.head_ref }}" ]]; then
-            pr_branch="automatedpr/${{ github.head_ref }}"
-            pr_base="${{ github.head_ref }}"
-          else
-            pr_branch="automatedpr/${{ github.ref_name }}"
-            pr_base="${{ github.ref_name }}"
-          fi
-          echo 'COMMIT_MESSAGE=Reformat R code using styler' >> "${GITHUB_OUTPUT}"
-          echo "PR_BRANCH=${pr_branch}" >> "${GITHUB_OUTPUT}"
-          echo "PR_BASE=${pr_base}" >> "${GITHUB_OUTPUT}"
+          {
+            echo 'COMMIT_MESSAGE=Reformat R code using styler'
+            echo "PR_BASE=${PR_BASE}"
+            echo "PR_BRANCH=automatedpr/${PR_BASE}"
+          } >> "${GITHUB_OUTPUT}"
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v6
         with:

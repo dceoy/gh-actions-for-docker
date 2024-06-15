@@ -16,7 +16,7 @@ on:
       aws-profile-env-file:
         required: false
         type: string
-        description: Path to the file containing the AWS profile environment variables
+        description: Environment file containing AWS IAM role ARN (ROLE_ARN) and region (REGION)
         default: null
       command-working-directory:
         required: false
@@ -53,10 +53,10 @@ on:
         type: string
         description: Additional options to pass to terraform apply
         default: null   # -auto-approve
-      terragrunt-run-all-options:
+      terragrunt-options:
         required: false
         type: string
-        description: Additional options to pass to terragrunt run-all
+        description: Additional options to pass to terragrunt
         default: null   # --terragrunt-non-interactive
       terraform-version:
         required: false
@@ -98,6 +98,11 @@ on:
         type: string
         description: Docker image tarball artifact name to download
         default: null
+      environment-variables-to-set:
+        required: false
+        type: string
+        description: Environment variables to set (e.g., "FOO=bar")
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -108,7 +113,13 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
     steps:
+      - name: Set environment variables
+        if: inputs.environment-variables-to-set != null
+        run: |
+          echo "${{ inputs.environment-variables-to-set }}" >> "${GITHUB_ENV}"
       - name: Download the image tarball artifact
         if: inputs.use-docker && inputs.docker-image-artifact-name != null
         uses: actions/download-artifact@v4
@@ -117,8 +128,8 @@ jobs:
           path: /tmp/
       - name: Load the image tarball
         if: inputs.use-docker && inputs.docker-image-artifact-name != null
-        run: >
-          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}
+        run: |
+          docker load -i "${IMAGE_TAR}"
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Terraform
@@ -128,17 +139,16 @@ jobs:
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
-          TG_VERSION: ${{ inputs.terragrunt-version }}
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
-          if [[ "${TG_VERSION}" == 'latest' ]]; then
-            url="$( \
-              curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-                | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
-            )"
+          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
+            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+              | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
-            url="https://github.com/gruntwork-io/terragrunt/releases/download/${TG_VERSION}/terragrunt_linux_amd64"
+            curl -sSL -o /usr/local/bin/terragrunt \
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
           fi
-          curl -sSL -o /usr/local/bin/terragrunt "${url}"
           chmod +x /usr/local/bin/terragrunt
       - name: Set up QEMU
         if: inputs.use-docker
@@ -152,28 +162,22 @@ jobs:
         with:
           images: ${{ inputs.docker-metadata-action-images }}
           tags: ${{ inputs.docker-metadata-action-tags }}
-      - name: Set AWS profile environment variables
+      - name: Read AWS profile environment file
+        if: inputs.aws-profile-env-file != null
         id: aws-profile-env
         run: |
-          if [[ -n "${{ inputs.aws-profile-env-file }}" ]]; then
-            source ${{ inputs.aws-profile-env-file }}
-          else
-            ROLE_ARN="${{ inputs.aws-iam-role-to-assume }}"
-            REGION="${{ inputs.aws-region }}"
-          fi
-          echo "ROLE_ARN=${ROLE_ARN}" >> "${GITHUB_OUTPUT}"
-          echo "REGION=${REGION}" >> "${GITHUB_OUTPUT}"
+          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.aws-profile-env.outputs.ROLE_ARN }}
-          aws-region: ${{ steps.aws-profile-env.outputs.REGION }}
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
+          aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
           role-session-name: github-actions-${{ github.run_id }}
       - name: Prepare working directories for Terraform
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all init ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-init-options }}
+            terragrunt run-all init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
           else
             terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
           fi
@@ -181,7 +185,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all validate ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-validate-options }}
+            terragrunt run-all validate ${{ inputs.terragrunt-options }} ${{ inputs.terraform-validate-options }}
           else
             terraform ${{ inputs.terraform-options }} validate ${{ inputs.terraform-validate-options }}
           fi
@@ -190,7 +194,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all plan ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-plan-options }}
+            terragrunt run-all plan ${{ inputs.terragrunt-options }} ${{ inputs.terraform-plan-options }}
           else
             terraform ${{ inputs.terraform-options }} plan ${{ inputs.terraform-plan-options }}
           fi
@@ -199,7 +203,7 @@ jobs:
         working-directory: ${{ inputs.command-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all apply ${{ inputs.terragrunt-run-all-options }} ${{ inputs.terraform-apply-options }}
+            terragrunt run-all apply ${{ inputs.terragrunt-options }} ${{ inputs.terraform-apply-options }}
           else
             terraform ${{ inputs.terraform-options }} apply ${{ inputs.terraform-apply-options }}
           fi

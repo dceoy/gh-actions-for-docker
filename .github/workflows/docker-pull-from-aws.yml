@@ -1,0 +1,93 @@
+---
+name: Docker image pull from AWS
+on:
+  workflow_call:
+    inputs:
+      image-names:
+        required: true
+        type: string
+        description: Docker image names to pull (separated by spaces or returns)
+      new-image-tags-json:
+        required: false
+        type: string
+        description: JSON object containing new tags to apply to Docker images
+        default: null
+      aws-iam-role-to-assume:
+        required: false
+        type: string
+        description: AWS IAM role ARN to assume
+        default: null
+      aws-region:
+        required: false
+        type: string
+        description: AWS region to use
+        default: us-east-1
+      aws-profile-env-file:
+        required: false
+        type: string
+        description: Path to the file containing the AWS profile environment variables
+        default: null
+      image-artifact-name:
+        required: false
+        type: string
+        description: Docker image tarball artifact name to download
+        default: docker-image
+      image-artifact-retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+jobs:
+  pull-and-save:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
+      IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Read AWS profile environment file
+        if: inputs.aws-profile-env-file != null
+        id: aws-profile-env
+        run: |
+          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
+          aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
+          role-session-name: github-actions-${{ github.run_id }}
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Pull the Docker images
+        run: |
+          echo '${{ inputs.image-names }}' | tr ' ' '\n' > "${IMAGE_URI_LIST_TXT}"
+          xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
+      - name: Tag the Docker images
+        if: ${{ inputs.new-image-tags-json != null }}
+        env:
+          NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
+        run: |
+          echo "${NEW_IMAGE_TAGS_JSON}" \
+            | jq -r 'to_entries[] | "docker tag \(.key) .\(.value)"' \
+            | xargs -L1 bash -xc
+          cat "${IMAGE_URI_LIST_TXT}" <(echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]') \
+            | sort -u \
+            > "${IMAGE_URI_LIST_TXT}.tmp.txt"
+          mv "${IMAGE_URI_LIST_TXT}.tmp.txt" "${IMAGE_URI_LIST_TXT}"
+      - name: Save the Docker images to an image tarball
+        run: |
+          xargs -t docker save -o "${IMAGE_TAR}" < "${IMAGE_URI_LIST_TXT}"
+      - name: Upload the image tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.image-artifact-name }}
+          path: ${{ env.IMAGE_TAR }}
+          retention-days: ${{ inputs.image-artifact-retention-days }}
