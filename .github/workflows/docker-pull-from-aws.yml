@@ -4,13 +4,14 @@ on:
   workflow_call:
     inputs:
       image-names:
-        required: true
+        required: false
         type: string
         description: Docker image names to pull (separated by spaces or returns)
+        default: null
       new-image-tags-json:
         required: false
         type: string
-        description: JSON object containing new tags to apply to Docker images
+        description: JSON object with source image names as keys and target image tags as values
         default: null
       aws-iam-role-to-assume:
         required: false
@@ -48,6 +49,8 @@ jobs:
   pull-and-save:
     runs-on: ubuntu-latest
     env:
+      IMAGE_NAMES: ${{ inputs.image-names }}
+      NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
       IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
       IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
     steps:
@@ -58,7 +61,7 @@ jobs:
         id: aws-profile-env
         run: |
           cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
-      - name: Configure aws credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
@@ -68,20 +71,22 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Pull the Docker images
         run: |
-          echo '${{ inputs.image-names }}' | tr ' ' '\n' > "${IMAGE_URI_LIST_TXT}"
+          {
+            if [[ -n "${IMAGE_NAMES}" ]]; then
+              echo "${IMAGE_NAMES}" | tr ' ' '\n'
+            elif [[ -n "${NEW_IMAGE_TAGS_JSON}" ]]; then
+              echo "${NEW_IMAGE_TAGS_JSON}" | jq -r 'keys[]'
+            fi
+          } | sort -u -o "${IMAGE_URI_LIST_TXT}"
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
       - name: Tag the Docker images
         if: ${{ inputs.new-image-tags-json != null }}
-        env:
-          NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
         run: |
           echo "${NEW_IMAGE_TAGS_JSON}" \
             | jq -r 'to_entries[] | "docker tag \(.key) .\(.value)"' \
             | xargs -L1 bash -xc
-          cat "${IMAGE_URI_LIST_TXT}" <(echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]') \
-            | sort -u \
-            > "${IMAGE_URI_LIST_TXT}.tmp.txt"
-          mv "${IMAGE_URI_LIST_TXT}.tmp.txt" "${IMAGE_URI_LIST_TXT}"
+          echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
+          sort -u -o "${IMAGE_URI_LIST_TXT}" "${IMAGE_URI_LIST_TXT}"
       - name: Save the Docker images to an image tarball
         run: |
           xargs -t docker save -o "${IMAGE_TAR}" < "${IMAGE_URI_LIST_TXT}"

@@ -18,7 +18,7 @@ on:
         type: string
         description: Environment file containing AWS IAM role ARN (ROLE_ARN) and region (REGION)
         default: null
-      command-working-directory:
+      terraform-or-terragrunt-working-directory:
         required: false
         type: string
         description: Working directory for Terraform or Terragrunt
@@ -167,14 +167,14 @@ jobs:
         id: aws-profile-env
         run: |
           cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
-      - name: Configure aws credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
           aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
           role-session-name: github-actions-${{ github.run_id }}
       - name: Prepare working directories for Terraform
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
@@ -182,7 +182,7 @@ jobs:
             terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
           fi
       - name: Check whether the configuration of Terraform is valid
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all validate ${{ inputs.terragrunt-options }} ${{ inputs.terraform-validate-options }}
@@ -191,7 +191,7 @@ jobs:
           fi
       - name: Show changes required by the current configuration of Terraform
         if: (! inputs.apply)
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all plan ${{ inputs.terragrunt-options }} ${{ inputs.terraform-plan-options }}
@@ -200,7 +200,7 @@ jobs:
           fi
       - name: Create or update infrastructure using Terraform
         if: inputs.apply
-        working-directory: ${{ inputs.command-working-directory }}
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
           if ${{ inputs.terragrunt-version != null }}; then
             terragrunt run-all apply ${{ inputs.terragrunt-options }} ${{ inputs.terraform-apply-options }}
