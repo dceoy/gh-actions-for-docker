@@ -55,7 +55,7 @@ jobs:
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
-              https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Format the code using terraform fmt
@@ -71,22 +71,19 @@ jobs:
           tflint --recursive --filter ${{ inputs.search-path }}
       - name: Create output parameters
         id: parameters
+        env:
+          PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
           if [[ -n "${{ inputs.terragrunt-version }}" ]]; then
             formatters='terraform and terragrunt'
           else
             formatters='terraform'
           fi
-          if [[ -n "${{ github.head_ref }}" ]]; then
-            pr_branch="automatedpr/${{ github.head_ref }}"
-            pr_base="${{ github.head_ref }}"
-          else
-            pr_branch="automatedpr/${{ github.ref_name }}"
-            pr_base="${{ github.ref_name }}"
-          fi
-          echo "COMMIT_MESSAGE=Reformat HCL code using ${formatters}" >> "${GITHUB_OUTPUT}"
-          echo "PR_BRANCH=${pr_branch}" >> "${GITHUB_OUTPUT}"
-          echo "PR_BASE=${pr_base}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "COMMIT_MESSAGE=Reformat HCL code using ${formatters}"
+            echo "PR_BASE=${PR_BASE}"
+            echo "PR_BRANCH=automatedpr/${PR_BASE}"
+          } >> "${GITHUB_OUTPUT}"
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v6
         with:

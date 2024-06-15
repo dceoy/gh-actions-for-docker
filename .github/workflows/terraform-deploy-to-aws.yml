@@ -147,7 +147,7 @@ jobs:
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
-              https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Set up QEMU
@@ -162,15 +162,11 @@ jobs:
         with:
           images: ${{ inputs.docker-metadata-action-images }}
           tags: ${{ inputs.docker-metadata-action-tags }}
-      - name: Set AWS profile environment variables
+      - name: Read AWS profile environment file
         if: inputs.aws-profile-env-file != null
         id: aws-profile-env
         run: |
           cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
-          else
-            echo ROLE_ARN=${{ inputs.aws-iam-role-to-assume }} >> "${GITHUB_OUTPUT}"
-            echo REGION=${{ inputs.aws-region }} >> "${GITHUB_OUTPUT}"
-          fi
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

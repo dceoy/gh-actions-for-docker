@@ -127,11 +127,6 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
-      docker-primary-image-tag:
-        required: false
-        type: string
-        description: Primary Docker image tag to pull
-        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -143,7 +138,7 @@ jobs:
   pull:
     uses: ./.github/workflows/docker-pull-from-aws.yml
     with:
-      image-names: ${{ inputs.docker-images }}
+      image-names: ${{ inputs.docker-image-names }}
       new-image-tags-json: ${{ inputs.new-docker-image-tags-json }}
       aws-iam-role-to-assume: ${{ inputs.source-aws-iam-role-to-assume }}
       aws-region: ${{ inputs.source-aws-region }}
@@ -161,7 +156,7 @@ jobs:
       command-working-directory: ${{ inputs.command-working-directory }}
       apply: ${{ inputs.apply }}
       terraform-options: ${{ inputs.terraform-apply-options }}
-      terraform-init-options: ${{ inputs.terragrunt-init-options }}
+      terraform-init-options: ${{ inputs.terraform-init-options }}
       terraform-validate-options: ${{ inputs.terraform-validate-options }}
       terraform-plan-options: ${{ inputs.terraform-plan-options }}
       terraform-apply-options: ${{ inputs.terraform-apply-options }}
@@ -172,4 +167,3 @@ jobs:
       docker-metadata-action-images: ${{ inputs.docker-metadata-action-images }}
       docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
       docker-image-artifact-name: ${{ inputs.docker-image-artifact-name }}
-      environment-variable-to-set: DOCKER_PRIMARY_IMAGE_TAG=${{ inputs.docker-primary-image-tag }}

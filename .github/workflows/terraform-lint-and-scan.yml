@@ -47,7 +47,7 @@ jobs:
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
-              https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Lint the code using terraform fmt

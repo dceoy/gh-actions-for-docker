@@ -53,15 +53,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Set AWS profile environment variables
+      - name: Read AWS profile environment file
         if: inputs.aws-profile-env-file != null
         id: aws-profile-env
         run: |
           cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
-          else
-            echo ROLE_ARN=${{ inputs.aws-iam-role-to-assume }} >> "${GITHUB_OUTPUT}"
-            echo REGION=${{ inputs.aws-region }} >> "${GITHUB_OUTPUT}"
-          fi
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -72,16 +68,17 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Pull the Docker images
         run: |
-          tr ' ' '\n' << '${{ inputs.image-names }}' > "${IMAGE_URI_LIST_TXT}"
+          echo '${{ inputs.image-names }}' | tr ' ' '\n' > "${IMAGE_URI_LIST_TXT}"
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
       - name: Tag the Docker images
         if: ${{ inputs.new-image-tags-json != null }}
         env:
           NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
         run: |
-          jq -r 'to_entries[] | "docker tag \(.key) .\(.value)"' << "${NEW_IMAGE_TAGS_JSON}" \
+          echo "${NEW_IMAGE_TAGS_JSON}" \
+            | jq -r 'to_entries[] | "docker tag \(.key) .\(.value)"' \
             | xargs -L1 bash -xc
-          cat "${IMAGE_URI_LIST_TXT}" <(jq -r '.[]' << "${NEW_IMAGE_TAGS_JSON}") \
+          cat "${IMAGE_URI_LIST_TXT}" <(echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]') \
             | sort -u \
             > "${IMAGE_URI_LIST_TXT}.tmp.txt"
           mv "${IMAGE_URI_LIST_TXT}.tmp.txt" "${IMAGE_URI_LIST_TXT}"
