@@ -83,7 +83,7 @@ jobs:
         if: ${{ inputs.new-image-tags-json != null }}
         run: |
           echo "${NEW_IMAGE_TAGS_JSON}" \
-            | jq -r 'to_entries[] | "docker tag \(.key) .\(.value)"' \
+            | jq -r 'to_entries[] | "docker tag \(.key) \(.value)"' \
             | xargs -L1 bash -xc
           echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
           sort -u -o "${IMAGE_URI_LIST_TXT}" "${IMAGE_URI_LIST_TXT}"
