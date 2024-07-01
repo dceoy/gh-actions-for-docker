@@ -13,11 +13,6 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      runs-on:
-        required: false
-        type: string
-        description: Type of machine to run the job on
-        default: ubuntu-latest
       flake8-options:
         required: false
         type: string
@@ -43,6 +38,11 @@ on:
         type: string
         description: Additional packages to install
         default: autopep8 flake8-bugbear flake8-isort pep8-naming
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}

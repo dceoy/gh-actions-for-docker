@@ -13,11 +13,6 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      runs-on:
-        required: false
-        type: string
-        description: Type of machine to run the job on
-        default: ubuntu-latest
       black-options:
         required: false
         type: string
@@ -58,6 +53,11 @@ on:
         type: boolean
         description: Run lint before creating a pull request
         default: true
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 permissions:
   contents: write
   pull-requests: write
