@@ -8,6 +8,11 @@ on:
         type: string
         description: Python version to use
         default: 3.x
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
     secrets:
       PYPI_API_TOKEN:
         required: true
@@ -19,7 +24,7 @@ defaults:
 jobs:
   build:
     name: Build the Python 🐍 distribution 📦
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     outputs:
       project-name: ${{ steps.read-project-name.outputs.project-name }}
     steps:
@@ -55,7 +60,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
       id-token: write  # IMPORTANT: mandatory for sigstore
@@ -90,7 +95,7 @@ jobs:
     needs:
       - build
       - github-release
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     environment:
       name: pypi
       url: https://pypi.org/p/${{ needs.build.outputs.project-name }}
@@ -111,7 +116,7 @@ jobs:
 #     name: Publish the Python 🐍 distribution 📦 to TestPyPI
 #     needs:
 #       - build
-#     runs-on: ubuntu-latest
+#     runs-on: ${{ inputs.runs-on }}
 #     environment:
 #       name: testpypi
 #       url: https://test.pypi.org/p/<package-name>

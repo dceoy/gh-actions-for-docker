@@ -18,13 +18,18 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
   lint-and-scan:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,20 +39,25 @@ jobs:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Install tflint and tfsec
         run: |
-          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          if [[ "${OSTYPE}" =~ ^darwin ]]; then
+            brew install tflint tfsec
+          else
+            curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+            curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          fi
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
           TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
+          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
           if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
             curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-              | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+              | jq -r ".assets[] | select(.name | contains(\"${arch_type}\")) | .browser_download_url" \
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
-              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Lint the code using terraform fmt

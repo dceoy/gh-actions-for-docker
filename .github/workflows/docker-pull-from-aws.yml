@@ -38,6 +38,11 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -47,7 +52,7 @@ permissions:
   contents: read    # This is required for actions/checkout
 jobs:
   pull-and-save:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     env:
       IMAGE_NAMES: ${{ inputs.image-names }}
       NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
@@ -84,7 +89,7 @@ jobs:
         run: |
           echo "${NEW_IMAGE_TAGS_JSON}" \
             | jq -r 'to_entries[] | "docker tag \(.key) \(.value)"' \
-            | xargs -L1 bash -xc
+            | xargs -L1 -t bash -c
           echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
           sort -u -o "${IMAGE_URI_LIST_TXT}" "${IMAGE_URI_LIST_TXT}"
       - name: Save the Docker images to an image tarball

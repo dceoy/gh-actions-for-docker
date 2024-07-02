@@ -103,6 +103,11 @@ on:
         type: string
         description: Environment variables to set (e.g., "FOO=bar")
         default: null
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -112,7 +117,7 @@ permissions:
   contents: read    # This is required for actions/checkout
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     env:
       IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
     steps:
@@ -141,13 +146,14 @@ jobs:
         env:
           TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
+          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
           if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
             curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-              | jq -r '.assets[] | select(.name | contains("linux_amd64")) | .browser_download_url' \
+              | jq -r ".assets[] | select(.name | contains(\"${arch_type}\")) | .browser_download_url" \
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
-              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Set up QEMU
