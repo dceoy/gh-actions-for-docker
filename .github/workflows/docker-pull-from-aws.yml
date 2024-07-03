@@ -8,7 +8,7 @@ on:
         type: string
         description: Docker image names to pull (separated by spaces or returns)
         default: null
-      new-image-tags-json:
+      tag-source-to-target-json:
         required: false
         type: string
         description: JSON object with source image names as keys and target image tags as values
@@ -55,7 +55,7 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     env:
       IMAGE_NAMES: ${{ inputs.image-names }}
-      NEW_IMAGE_TAGS_JSON: ${{ inputs.new-image-tags-json }}
+      TAG_SOURCE_TO_TARGET_JSON: ${{ inputs.tag-source-to-target-json }}
       IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
       IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
     steps:
@@ -79,18 +79,18 @@ jobs:
           {
             if [[ -n "${IMAGE_NAMES}" ]]; then
               echo "${IMAGE_NAMES}" | tr ' ' '\n'
-            elif [[ -n "${NEW_IMAGE_TAGS_JSON}" ]]; then
-              echo "${NEW_IMAGE_TAGS_JSON}" | jq -r 'keys[]'
+            elif [[ -n "${TAG_SOURCE_TO_TARGET_JSON}" ]]; then
+              echo "${TAG_SOURCE_TO_TARGET_JSON}" | jq -r 'keys[]'
             fi
           } | sort -u -o "${IMAGE_URI_LIST_TXT}"
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
       - name: Tag the Docker images
-        if: ${{ inputs.new-image-tags-json != null }}
+        if: ${{ inputs.tag-source-to-target-json != null }}
         run: |
-          echo "${NEW_IMAGE_TAGS_JSON}" \
+          echo "${TAG_SOURCE_TO_TARGET_JSON}" \
             | jq -r 'to_entries[] | "docker tag \(.key) \(.value)"' \
             | xargs -L1 -t bash -c
-          echo "${NEW_IMAGE_TAGS_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
+          echo "${TAG_SOURCE_TO_TARGET_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
           sort -u -o "${IMAGE_URI_LIST_TXT}" "${IMAGE_URI_LIST_TXT}"
       - name: Save the Docker images to an image tarball
         run: |

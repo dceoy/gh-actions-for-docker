@@ -1,14 +1,54 @@
 ---
-name: Docker image pull and resource deployment to AWS using Terraform
+name: Docker image save and resource deployment to AWS using Terraform
 on:
   workflow_call:
     inputs:
-      docker-image-names:
+      docker-image-name-to-target-stage-json:
+        required: false
+        type: string
+        description: JSON object with Docker image names as keys and Docker build target stages as values
+        default: null
+      docker-build-context:
+        required: false
+        type: string
+        description: Docker build's context is the set of files located in the specified PATH or URL
+        default: .
+      dockerfile:
+        required: false
+        type: string
+        description: Path to a Dockerfile
+        default: Dockerfile
+      docker-buildx-build-options:
+        required: false
+        type: string
+        description: Additional options for docker buildx build other than --tag, --target, and --file
+        default: null
+      scan-before-build:
+        required: false
+        type: boolean
+        description: Scan Dockerfile before build
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for Trivy
+        default: 1
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      docker-image-names-to-pull:
         required: false
         type: string
         description: Docker image names to pull (separated by spaces or returns)
         default: null
-      new-docker-image-tags-json:
+      docker-tag-source-to-target-json:
         required: false
         type: string
         description: JSON object with source image names as keys and target image tags as values
@@ -128,6 +168,11 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -136,20 +181,40 @@ permissions:
   id-token: write   # This is required for requesting the JWT
   contents: read    # This is required for actions/checkout
 jobs:
+  build:
+    if: >
+      inputs.docker-image-name-to-target-stage-json != null
+    uses: ./.github/workflows/docker-build-with-multi-targets.yml
+    with:
+      image-name-to-target-stage-json: ${{ inputs.docker-image-name-to-target-stage-json }}
+      context: ${{ inputs.docker-build-context }}
+      file: ${{ inputs.dockerfile }}
+      docker-buildx-build-options: ${{ inputs.docker-buildx-build-options }}
+      scan-before-build: ${{ inputs.scan-before-build }}
+      trivy-exit-code: ${{ inputs.trivy-exit-code }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      image-artifact-name: ${{ inputs.docker-image-artifact-name }}
+      image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+      runs-on: ${{ inputs.runs-on }}
   pull:
-    if: inputs.docker-image-names != null || inputs.new-docker-image-tags-json != null
+    if: >
+      inputs.docker-image-name-to-target-stage-json == null
+      && (inputs.docker-image-names-to-pull != null || inputs.docker-tag-source-to-target-json != null)
     uses: ./.github/workflows/docker-pull-from-aws.yml
     with:
-      image-names: ${{ inputs.docker-image-names }}
-      new-image-tags-json: ${{ inputs.new-docker-image-tags-json }}
+      image-names: ${{ inputs.docker-image-names-to-pull }}
+      tag-source-to-target-json: ${{ inputs.docker-tag-source-to-target-json }}
       aws-iam-role-to-assume: ${{ inputs.source-aws-iam-role-to-assume }}
       aws-region: ${{ inputs.source-aws-region }}
       aws-profile-env-file: ${{ inputs.source-aws-profile-env-file }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+      runs-on: ${{ inputs.runs-on }}
   deploy:
     if: always()
     needs:
+      - build
       - pull
     uses: ./.github/workflows/terraform-deploy-to-aws.yml
     with:
@@ -170,3 +235,4 @@ jobs:
       docker-metadata-action-images: ${{ inputs.docker-metadata-action-images }}
       docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
       docker-image-artifact-name: ${{ inputs.docker-image-artifact-name }}
+      runs-on: ${{ inputs.runs-on }}

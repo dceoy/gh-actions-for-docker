@@ -43,16 +43,11 @@ on:
         type: boolean
         description: Push an image to the registry
         default: true
-      lint-before-build:
+      scan-before-build:
         required: false
         type: boolean
-        description: Lint Dockerfile before build
+        description: Scan Dockerfile before build
         default: true
-      hadolint-failure-threshold:
-        required: false
-        type: string
-        description: Failure threshold for hadolint
-        default: error
       scan-after-build:
         required: false
         type: boolean
@@ -62,7 +57,7 @@ on:
         required: false
         type: number
         description: Exit code for Trivy
-        default: 0
+        default: 1
       trivy-severity:
         required: false
         type: string
@@ -73,6 +68,11 @@ on:
         type: string
         description: List of scanners to use
         default: vuln,secret
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
       docker-metadata-action-tags:
         required: false
         type: string
@@ -131,12 +131,17 @@ jobs:
         uses: sigstore/cosign-installer@v3.5.0
         with:
           cosign-release: v2.2.2
-      - name: Lint Dockerfile
-        if: inputs.lint-before-build
-        uses: hadolint/hadolint-action@v3.1.0
+      - name: Run Trivy vulnerability scanner in IaC mode
+        if: inputs.scan-before-build
+        uses: aquasecurity/trivy-action@0.23.0
         with:
-          dockerfile: ${{ inputs.file }}
-          failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+          scan-ref: ${{ inputs.file }}
+          scan-type: config
+          hide-progress: true
+          format: table
+          exit-code: ${{ inputs.trivy-exit-code }}
+          severity: ${{ inputs.trivy-severity }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5.5.1
@@ -193,6 +198,7 @@ jobs:
           exit-code: ${{ inputs.trivy-exit-code }}
           severity: ${{ inputs.trivy-severity }}
           scanners: ${{ inputs.trivy-scanners }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           format: sarif
           output: trivy-results.sarif
       - name: Upload Trivy scan results to GitHub Security tab

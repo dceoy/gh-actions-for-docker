@@ -1,0 +1,111 @@
+---
+name: Docker image build and save for multiple build targets
+on:
+  workflow_call:
+    inputs:
+      image-name-to-target-stage-json:
+        required: false
+        type: string
+        description: JSON object with image names as keys and target stages as values
+        default: null
+      context:
+        required: false
+        type: string
+        description: Build's context is the set of files located in the specified PATH or URL
+        default: .
+      file:
+        required: false
+        type: string
+        description: Path to a Dockerfile
+        default: Dockerfile
+      docker-buildx-build-options:
+        required: false
+        type: string
+        description: Additional options for docker buildx build other than --tag, --target, and --file
+        default: null
+      scan-before-build:
+        required: false
+        type: boolean
+        description: Scan Dockerfile before build
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for Trivy
+        default: 1
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      image-artifact-name:
+        required: false
+        type: string
+        description: Image tarball artifact name to upload
+        default: null
+      image-artifact-retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  build-and-save:
+    runs-on: ${{ inputs.runs-on }}
+    env:
+      IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Run Trivy vulnerability scanner in IaC mode
+        if: inputs.scan-before-build
+        uses: aquasecurity/trivy-action@0.23.0
+        with:
+          scan-ref: ${{ inputs.file }}
+          scan-type: config
+          hide-progress: true
+          format: table
+          exit-code: ${{ inputs.trivy-exit-code }}
+          severity: ${{ inputs.trivy-severity }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      - name: Build images for multiple target stages
+        env:
+          IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
+        run: |
+          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}" \
+            | jq -r 'to_entries[] | "--tag \(.key) --target \(.value)"' \
+            | xargs -I{} -t bash -c \
+              docker buildx build {} \
+              --file ${{ inputs.file }} \
+              ${{ inputs.docker-buildx-build-options }} \
+              ${{ inputs.context }}
+      - name: Save the images as a tarball
+        env:
+          IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
+        run: |
+          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}" \
+            | jq -r 'keys[]' \
+            | xargs -t docker save -o "${IMAGE_TAR}"
+      - name: Upload the image tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.image-artifact-name }}
+          path: ${{ env.IMAGE_TAR }}
+          retention-days: ${{ inputs.image-artifact-retention-days }}
