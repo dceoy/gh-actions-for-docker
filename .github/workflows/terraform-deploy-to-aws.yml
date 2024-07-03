@@ -149,7 +149,7 @@ jobs:
           arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
           if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
             curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-              | jq -r ".assets[] | select(.name | contains(\"${arch_type}\")) | .browser_download_url" \
+              | jq -r ".assets[] | select(.name | endswith(\"${arch_type}\")) | .browser_download_url" \
               | xargs -t curl -sSL -o /usr/local/bin/terragrunt
           else
             curl -sSL -o /usr/local/bin/terragrunt \
