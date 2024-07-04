@@ -183,7 +183,7 @@ permissions:
 jobs:
   build:
     if: >
-      inputs.docker-image-name-to-target-stage-json != null
+      inputs.apply && inputs.docker-image-name-to-target-stage-json != null
     uses: ./.github/workflows/docker-build-with-multi-targets.yml
     with:
       image-name-to-target-stage-json: ${{ inputs.docker-image-name-to-target-stage-json }}
@@ -199,7 +199,7 @@ jobs:
       runs-on: ${{ inputs.runs-on }}
   pull:
     if: >
-      inputs.docker-image-name-to-target-stage-json == null
+      inputs.apply && inputs.docker-image-name-to-target-stage-json == null
       && (inputs.docker-image-names-to-pull != null || inputs.docker-tag-source-to-target-json != null)
     uses: ./.github/workflows/docker-pull-from-aws.yml
     with:

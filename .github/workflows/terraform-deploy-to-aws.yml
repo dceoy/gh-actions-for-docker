@@ -126,13 +126,13 @@ jobs:
         run: |
           echo "${{ inputs.environment-variables-to-set }}" >> "${GITHUB_ENV}"
       - name: Download the image tarball artifact
-        if: inputs.use-docker && inputs.docker-image-artifact-name != null
+        if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.docker-image-artifact-name }}
           path: /tmp/
       - name: Load the image tarball
-        if: inputs.use-docker && inputs.docker-image-artifact-name != null
+        if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
         run: |
           docker load -i "${IMAGE_TAR}"
       - name: Checkout repository
