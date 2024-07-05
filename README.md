@@ -19,6 +19,9 @@ Reusable workflows
   - [docker-build-and-push.yml](.github/workflows/docker-build-and-push.yml)
     - Docker image build and push
 
+  - [docker-build-with-multi-targets.yml](.github/workflows/docker-build-with-multi-targets.yml)
+    - Docker image build and save for multiple build targets
+
   - [docker-compose-build-and-push.yml](.github/workflows/docker-compose-build-and-push.yml)
     - Docker image build and push using docker-compose
 
@@ -70,8 +73,8 @@ Reusable workflows
   - [terraform-deploy-to-aws.yml](.github/workflows/terraform-deploy-to-aws.yml)
     - Deployment of AWS resources using Terraform
 
-  - [terraform-docker-pull-and-deploy-to-aws.yml](.github/workflows/terraform-docker-pull-and-deploy-to-aws.yml)
-    - Docker image pull and resource deployment to AWS using Terraform
+  - [terraform-docker-save-and-deploy-to-aws.yml](.github/workflows/terraform-docker-save-and-deploy-to-aws.yml)
+    - Docker image save and resource deployment to AWS using Terraform
 
   - [terraform-format-and-pr.yml](.github/workflows/terraform-format-and-pr.yml)
     - Formatter for Terraform
