@@ -72,7 +72,7 @@ jobs:
     with:
       dockerfile-paths: ./src/Dockerfile
       hadolint-options: --failure-threshold error
-      trivy-config-options: --exit-code 0
+      trivy-config-options: --exit-code 1
   docker-build-and-push:
     if: >
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'build'
