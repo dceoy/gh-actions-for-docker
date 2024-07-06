@@ -1,0 +1,124 @@
+---
+name: Switcher to apply or destroy AWS resources using Terragrunt
+on:
+  workflow_call:
+    inputs:
+      terragrunt-target-ec2-directory:
+        required: false
+        type: string
+        description: Terragrunt directory for the target EC2 instances to start or stop
+        default: null
+      terragrunt-target-resource-directories:
+        required: false
+        type: string
+        description: Terragrunt directories for the target resources to apply or destroy
+        default: vpce
+      aws-iam-role-to-assume:
+        required: false
+        type: string
+        description: AWS IAM role ARN to assume
+        default: null
+      aws-region:
+        required: false
+        type: string
+        description: AWS region to use
+        default: us-east-1
+      aws-profile-env-file:
+        required: false
+        type: string
+        description: Path to the file containing the AWS profile environment variables
+        default: null
+      terragrunt-working-directory:
+        required: false
+        type: string
+        description: Working directory for Terragrunt
+        default: .
+      start:
+        required: false
+        type: boolean
+        description: Start AWS resources
+        default: true
+      terraform-version:
+        required: false
+        type: string
+        description: Terraform version to use
+        default: latest
+      terragrunt-version:
+        required: false
+        type: string
+        description: Terragrunt version to use
+        default: latest
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+jobs:
+  start-or-stop:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+      - name: Install Terragrunt
+        env:
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
+        run: |
+          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
+          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
+            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+              | jq -r ".assets[] | select(.name | endswith(\"${arch_type}\")) | .browser_download_url" \
+              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
+          else
+            curl -sSL -o /usr/local/bin/terragrunt \
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
+          fi
+          chmod +x /usr/local/bin/terragrunt
+      - name: Read AWS profile environment file
+        if: inputs.aws-profile-env-file != null
+        id: aws-profile-env
+        run: |
+          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
+          aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
+          role-session-name: github-actions-${{ github.run_id }}
+      - name: Prepare working directories for Terraform
+        working-directory: ${{ inputs.terragrunt-working-directory }}
+        run: |
+          terragrunt run-all init
+      - name: Start or stop AWS resources
+        if: inputs.terragrunt-target-ec2-directory != null
+        run: |
+          if ${{ inputs.start }}; then
+            cmd='start-instances'
+          else
+            cmd='stop-instances'
+          fi
+          terragrunt output --terragrunt-working-dir='${{ inputs.terragrunt-target-ec2-directory }}' \
+            | grep -e '_ec2_instance_id = ' \
+            | grep -oe 'i-[0-9a-z]\+' \
+            | xargs -t aws ec2 "${cmd}" --instance-ids
+      - name: Create or destroy VPC interface endpoints and NAT gateways
+        if: inputs.terragrunt-target-resource-directories != null
+        run: |
+          if ${{ inputs.start }}; then
+            cmd='apply'
+          else
+            cmd='destroy'
+          fi
+          cat <<EOF | xargs -P2 -I{} -t terragrunt "${cmd}" --terragrunt-working-dir='{}' -auto-approve
+          ${{ inputs.terragrunt-target-resource-directories }}
+          EOF
