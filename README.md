@@ -82,6 +82,9 @@ Reusable workflows
   - [terraform-lint-and-scan.yml](.github/workflows/terraform-lint-and-scan.yml)
     - Lint and security scan for Terraform
 
+  - [terragrunt-aws-switch-resources.yml](.github/workflows/terragrunt-aws-switch-resources.yml)
+    - Switcher to apply or destroy AWS resources using Terragrunt
+
   - [toml-lint.yml](.github/workflows/toml-lint.yml)
     - Lint for TOML
 
