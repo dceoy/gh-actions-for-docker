@@ -38,11 +38,21 @@ on:
         type: string
         description: Severity levels to fail the scan
         default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-scanners:
+        required: false
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,config
       trivy-ignore-unfixed:
         required: false
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
       docker-image-names-to-pull:
         required: false
         type: string
@@ -193,7 +203,9 @@ jobs:
       scan-before-build: ${{ inputs.scan-before-build }}
       trivy-exit-code: ${{ inputs.trivy-exit-code }}
       trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-config: ${{ inputs.trivy-config }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
       runs-on: ${{ inputs.runs-on }}

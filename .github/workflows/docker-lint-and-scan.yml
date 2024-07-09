@@ -6,8 +6,13 @@ on:
       dockerfile-paths:
         required: false
         type: string
-        description: Paths to files to lint and scan (CSV)
+        description: Paths to files to lint and scan (comma-separated list)
         default: ./Dockerfile
+      directories-to-scan:
+        required: false
+        type: string
+        description: Directories to scan (comma-separated list)
+        default: .
       login:
         required: false
         type: boolean
@@ -18,11 +23,11 @@ on:
         type: string
         description: Additional options to pass to hadolint
         default: --failure-threshold error
-      trivy-config-options:
+      trivy-filesystem-options:
         required: false
         type: string
-        description: Additional options to pass to trivy config
-        default: --exit-code 1
+        description: Additional options to pass to trivy filesystem
+        default: --exit-code 1 --scanners vuln,misconfig,secret,license
       runs-on:
         required: false
         type: string
@@ -61,9 +66,9 @@ jobs:
             docker run --rm -i hadolint/hadolint \
               hadolint ${{ inputs.hadolint-options }} - < "${p}"
           done
-      - name: Find security issues using trivy config
+      - name: Scan the local filesystems using trivy filesystem
         run: |
-          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
-            docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \
-              config ${{ inputs.trivy-config-options }} "${p}"
+          for p in $(echo '${{ inputs.directories-to-scan }}' | tr ',' ' '); do
+            docker run --rm -i -v "${p}:/wd" aquasec/trivy \
+              filesystem ${{ inputs.trivy-filesystem-options }} /wd
           done

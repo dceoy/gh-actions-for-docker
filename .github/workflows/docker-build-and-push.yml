@@ -67,12 +67,17 @@ on:
         required: false
         type: string
         description: List of scanners to use
-        default: vuln,secret
+        default: vuln,secret,config
       trivy-ignore-unfixed:
         required: false
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
       docker-metadata-action-tags:
         required: false
         type: string
@@ -131,17 +136,18 @@ jobs:
         uses: sigstore/cosign-installer@v3.5.0
         with:
           cosign-release: v2.2.2
-      - name: Run Trivy vulnerability scanner in IaC mode
+      - name: Run Trivy vulnerability scanner in filesystem mode
         if: inputs.scan-before-build
         uses: aquasecurity/trivy-action@0.23.0
         with:
-          scan-ref: ${{ inputs.file }}
-          scan-type: config
-          hide-progress: true
-          format: table
-          exit-code: ${{ inputs.trivy-exit-code }}
+          scan-type: filesystem
+          scan-ref: ${{ inputs.context }}
+          scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+          exit-code: ${{ inputs.trivy-exit-code }}
+          trivy-config: ${{ inputs.trivy-config }}
+          format: github
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5.5.1
@@ -195,10 +201,11 @@ jobs:
         with:
           scan-type: image
           image-ref: ${{ steps.build-and-push.outputs.imageid }}
-          exit-code: ${{ inputs.trivy-exit-code }}
-          severity: ${{ inputs.trivy-severity }}
           scanners: ${{ inputs.trivy-scanners }}
+          severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+          exit-code: ${{ inputs.trivy-exit-code }}
+          trivy-config: ${{ inputs.trivy-config }}
           format: sarif
           output: trivy-results.sarif
       - name: Upload Trivy scan results to GitHub Security tab
