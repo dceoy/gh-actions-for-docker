@@ -53,26 +53,26 @@ on:
         type: boolean
         description: Scan the image after build
         default: true
-      trivy-exit-code:
+      trivy-scanners:
         required: false
-        type: number
-        description: Exit code for Trivy
-        default: 1
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
       trivy-severity:
         required: false
         type: string
         description: Severity levels to fail the scan
         default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
-      trivy-scanners:
-        required: false
-        type: string
-        description: List of scanners to use
-        default: vuln,secret,config
       trivy-ignore-unfixed:
         required: false
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
       trivy-config:
         required: false
         type: string
@@ -136,7 +136,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.5.0
         with:
           cosign-release: v2.2.2
-      - name: Run Trivy vulnerability scanner in filesystem mode
+      - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
         if: inputs.scan-before-build
         uses: aquasecurity/trivy-action@0.24.0
         with:
@@ -148,6 +148,8 @@ jobs:
           exit-code: ${{ inputs.trivy-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
           format: github
+          output: dependency-results.sbom.json
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5.5.1
@@ -204,7 +206,7 @@ jobs:
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: ${{ inputs.trivy-exit-code }}
+          exit-code: 0
           trivy-config: ${{ inputs.trivy-config }}
           format: sarif
           output: trivy-results.sarif

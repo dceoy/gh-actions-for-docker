@@ -28,26 +28,26 @@ on:
         type: boolean
         description: Scan Dockerfile before build
         default: true
-      trivy-exit-code:
+      trivy-scanners:
         required: false
-        type: number
-        description: Exit code for Trivy
-        default: 1
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
       trivy-severity:
         required: false
         type: string
         description: Severity levels to fail the scan
         default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
-      trivy-scanners:
-        required: false
-        type: string
-        description: List of scanners to use
-        default: vuln,secret,config
       trivy-ignore-unfixed:
         required: false
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
       trivy-config:
         required: false
         type: string

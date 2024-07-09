@@ -22,7 +22,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to docker-compose build
-        default: --parallel  --pull
+        default: --parallel --pull
       docker-compose-push-options:
         required: false
         type: string

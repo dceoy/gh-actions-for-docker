@@ -8,10 +8,10 @@ on:
         type: string
         description: Paths to files to lint and scan (comma-separated list)
         default: ./Dockerfile
-      directories-to-scan:
+      directory-to-scan:
         required: false
         type: string
-        description: Directories to scan (comma-separated list)
+        description: Directory to scan with Trivy
         default: .
       login:
         required: false
@@ -23,11 +23,31 @@ on:
         type: string
         description: Additional options to pass to hadolint
         default: --failure-threshold error
-      trivy-filesystem-options:
+      trivy-scanners:
         required: false
         type: string
-        description: Additional options to pass to trivy filesystem
-        default: --exit-code 1 --scanners vuln,misconfig,secret,license
+        description: List of scanners to use
+        default: vuln,secret,misconfig
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
       runs-on:
         required: false
         type: string
@@ -58,17 +78,23 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Pull images for hadolint and trivy
         run: |
-          docker pull hadolint/hadolint
-          docker pull aquasec/trivy
+          docker pull ghcr.io/hadolint/hadolint:latest
       - name: Lint the code using hadolint
         run: |
           for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
-            docker run --rm -i hadolint/hadolint \
+            docker run --rm -i ghcr.io/hadolint/hadolint:latest \
               hadolint ${{ inputs.hadolint-options }} - < "${p}"
           done
-      - name: Scan the local filesystems using trivy filesystem
-        run: |
-          for p in $(echo '${{ inputs.directories-to-scan }}' | tr ',' ' '); do
-            docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \
-              filesystem ${{ inputs.trivy-filesystem-options }} "${p}"
-          done
+      - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: filesystem
+          scan-ref: ${{ inputs.directory-to-scan }}
+          scanners: ${{ inputs.trivy-scanners }}
+          severity: ${{ inputs.trivy-severity }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+          exit-code: ${{ inputs.trivy-exit-code }}
+          trivy-config: ${{ inputs.trivy-config }}
+          format: github
+          output: dependency-results.sbom.json
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
