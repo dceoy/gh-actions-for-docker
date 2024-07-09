@@ -133,7 +133,7 @@ jobs:
           cosign-release: v2.2.2
       - name: Run Trivy vulnerability scanner in IaC mode
         if: inputs.scan-before-build
-        uses: aquasecurity/trivy-action@0.23.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-ref: ${{ inputs.file }}
           scan-type: config
@@ -191,7 +191,7 @@ jobs:
           echo "${TAGS}" | xargs -t -I {} cosign sign --yes "{}@${DIGEST}"
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
-        uses: aquasecurity/trivy-action@0.23.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: image
           image-ref: ${{ steps.build-and-push.outputs.imageid }}
