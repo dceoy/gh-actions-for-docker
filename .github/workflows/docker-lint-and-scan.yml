@@ -69,6 +69,6 @@ jobs:
       - name: Scan the local filesystems using trivy filesystem
         run: |
           for p in $(echo '${{ inputs.directories-to-scan }}' | tr ',' ' '); do
-            docker run --rm -i -v "${p}:/wd" aquasec/trivy \
-              filesystem ${{ inputs.trivy-filesystem-options }} /wd
+            docker run --rm -i -v "${PWD}:/wd" -w /wd aquasec/trivy \
+              filesystem ${{ inputs.trivy-filesystem-options }} "${p}"
           done
