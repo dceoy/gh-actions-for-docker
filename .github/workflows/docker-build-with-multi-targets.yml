@@ -86,7 +86,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Run Trivy vulnerability scanner in filesystem mode
         if: inputs.scan-before-build
-        uses: aquasecurity/trivy-action@0.23.0
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: filesystem
           scan-ref: ${{ inputs.context }}
