@@ -28,11 +28,11 @@ on:
         type: boolean
         description: Scan Dockerfile before build
         default: true
-      trivy-exit-code:
+      trivy-scanners:
         required: false
-        type: number
-        description: Exit code for Trivy
-        default: 1
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
       trivy-severity:
         required: false
         type: string
@@ -43,6 +43,16 @@ on:
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
       docker-image-names-to-pull:
         required: false
         type: string
@@ -193,7 +203,9 @@ jobs:
       scan-before-build: ${{ inputs.scan-before-build }}
       trivy-exit-code: ${{ inputs.trivy-exit-code }}
       trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-config: ${{ inputs.trivy-config }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
       runs-on: ${{ inputs.runs-on }}
