@@ -33,5 +33,5 @@ jobs:
           go install github.com/pelletier/go-toml/v2/cmd/tomll@latest
       - name: Execute tomllint
         run: >
-          find ${{ inputs.search-path }} -type f -name '*.toml'
-          -exec tomll {} \;
+          find ${{ inputs.search-path }} -type f -name '*.toml' -print0
+          | xargs -0 -t tomll

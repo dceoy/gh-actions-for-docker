@@ -8,6 +8,11 @@ on:
         type: string
         description: Path to search for files
         default: .
+      jsonlint-options:
+        required: false
+        type: string
+        description: Options to pass to jsonlint
+        default: -q
       node-version:
         required: false
         type: string
@@ -32,5 +37,5 @@ jobs:
           npm install -g jsonlint
       - name: Execute jsonlint
         run: >
-          find ${{ inputs.search-path }} -type f -name '*.json'
-          -exec jsonlint -q {} \;
+          find ${{ inputs.search-path }} -type f -name '*.json' -print0
+          | xargs -0 -t jsonlint ${{ inputs.jsonlint-options }}
