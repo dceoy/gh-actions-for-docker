@@ -8,6 +8,11 @@ on:
         type: string
         description: Paths to shell scripts
         default: .
+      shellcheck-options:
+        required: false
+        type: string
+        description: Options for shellcheck
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -23,5 +28,6 @@ jobs:
           sudo apt-get -y update
           sudo apt-get -y install --no-install-recommends --no-install-suggests shellcheck
       - name: Execute shellcheck
-        run: |
-          shellcheck ${{ inputs.file-paths }}
+        run: >
+          find ${{ inputs.file-paths }} -type f -name '*.sh' -print0
+          | xargs -0 -t shellcheck ${{ inputs.shellcheck-options }}
