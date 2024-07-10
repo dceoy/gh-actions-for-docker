@@ -38,6 +38,11 @@ on:
         type: boolean
         description: Start AWS resources
         default: true
+      terminate:
+        required: false
+        type: boolean
+        description: Terminate EC2 instances
+        default: false
       terraform-version:
         required: false
         type: string
@@ -105,19 +110,32 @@ jobs:
         working-directory: ${{ inputs.terragrunt-working-directory }}
         run: |
           terragrunt run-all init
-      - name: Start or stop AWS resources
+      - name: Start or stop EC2 instances
         if: inputs.terragrunt-target-ec2-directory != null
+        env:
+          TERRAGRUNT_TARGET_EC2_DIRECTORY: ${{ inputs.terragrunt-target-ec2-directory }}
         run: |
-          if ${{ inputs.start }}; then
-            cmd='start-instances'
+          if (! ${{ inputs.start }}) && ${{ inputs.terminate }}; then
+            terragrunt destroy --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
           else
-            cmd='stop-instances'
+            {
+              terragrunt output --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" \
+                | grep -e '_ec2_instance_id = ' \
+                | grep -oe 'i-[0-9a-z]\+' \
+                || :
+            } | tee /tmp/ec2_instance_ids.txt
+            if [[ -s /tmp/ec2_instance_ids.txt ]]; then
+              if ${{ inputs.start }}; then
+                cmd='start-instances'
+              else
+                cmd='stop-instances'
+              fi
+              xargs -t aws ec2 "${cmd}" --instance-ids < /tmp/ec2_instance_ids.txt
+            elif ${{ inputs.start }}; then
+              terragrunt apply --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
+            fi
           fi
-          terragrunt output --terragrunt-working-dir='${{ inputs.terragrunt-target-ec2-directory }}' \
-            | grep -e '_ec2_instance_id = ' \
-            | grep -oe 'i-[0-9a-z]\+' \
-            | xargs -t aws ec2 "${cmd}" --instance-ids
-      - name: Create or destroy VPC interface endpoints and NAT gateways
+      - name: Create or destroy target resources
         if: inputs.terragrunt-target-resource-directories != null
         run: |
           if ${{ inputs.start }}; then
@@ -125,6 +143,6 @@ jobs:
           else
             cmd='destroy'
           fi
-          cat <<EOF | xargs -P2 -I{} -t terragrunt "${cmd}" --terragrunt-working-dir='{}' -auto-approve
+          cat <<EOF | xargs -I{} -t terragrunt "${cmd}" --terragrunt-working-dir='{}' -auto-approve
           ${{ inputs.terragrunt-target-resource-directories }}
           EOF
