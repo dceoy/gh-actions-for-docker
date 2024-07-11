@@ -18,6 +18,26 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
       runs-on:
         required: false
         type: string
@@ -37,14 +57,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - name: Install tflint and tfsec
-        run: |
-          if [[ "${OSTYPE}" =~ ^darwin ]]; then
-            brew install tflint tfsec
-          else
-            curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-            curl -sSL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-          fi
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
@@ -63,14 +79,26 @@ jobs:
       - name: Lint the code using terraform fmt
         run: |
           terraform fmt -recursive -check ${{ inputs.search-path }}
-      - name: Lint the code using tflint
-        run: |
-          tflint --recursive --filter ${{ inputs.search-path }}
-      - name: Find security issues using tfsec
-        run: |
-          tfsec ${{ inputs.search-path }}
       - name: Check terragrunt HCL
         if: inputs.terragrunt-version != null
         run: >
           terragrunt hclfmt --terragrunt-check --terragrunt-diff
           --terragrunt-working-dir ${{ inputs.search-path }}
+      - name: Lint the code using tflint
+        run: |
+          tflint --recursive --filter ${{ inputs.search-path }}
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: config
+          scan-ref: ${{ inputs.search-path }}
+          severity: ${{ inputs.trivy-severity }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+          exit-code: ${{ inputs.trivy-exit-code }}
+          trivy-config: ${{ inputs.trivy-config }}
+          format: sarif
+          output: trivy-results.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif

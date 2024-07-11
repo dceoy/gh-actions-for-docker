@@ -31,6 +31,9 @@ Reusable workflows
   - [docker-pull-from-aws.yml](.github/workflows/docker-pull-from-aws.yml)
     - Docker image pull from AWS
 
+  - [docker-save-and-terraform-deploy-to-aws.yml](.github/workflows/docker-save-and-terraform-deploy-to-aws.yml)
+    - Docker image save and resource deployment to AWS using Terraform
+
   - [github-actions-lint.yml](.github/workflows/github-actions-lint.yml)
     - Lint for GitHub Actions workflows
 
@@ -72,9 +75,6 @@ Reusable workflows
 
   - [terraform-deploy-to-aws.yml](.github/workflows/terraform-deploy-to-aws.yml)
     - Deployment of AWS resources using Terraform
-
-  - [terraform-docker-save-and-deploy-to-aws.yml](.github/workflows/terraform-docker-save-and-deploy-to-aws.yml)
-    - Docker image save and resource deployment to AWS using Terraform
 
   - [terraform-format-and-pr.yml](.github/workflows/terraform-format-and-pr.yml)
     - Formatter for Terraform

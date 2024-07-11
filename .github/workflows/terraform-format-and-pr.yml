@@ -45,13 +45,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - name: Install tflint
-        run: |
-          if [[ "${OSTYPE}" =~ ^darwin ]]; then
-            brew install tflint
-          else
-            curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-          fi
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
         env:
@@ -74,7 +71,7 @@ jobs:
         if: inputs.terragrunt-version != null
         run: |
           terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir ${{ inputs.search-path }}
-      - name: Lint the code using tflint
+      - name: Lint the code using TFLint
         if: inputs.lint-before-pr
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
