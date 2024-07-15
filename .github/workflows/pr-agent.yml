@@ -13,6 +13,36 @@ on:
       - deleted
   workflow_call:
     inputs:
+      model:
+        required: false
+        type: string
+        description: Model to use for the API
+        default: null
+      model_turbo:
+        required: false
+        type: string
+        description: Turbo model to use for the API
+        default: null
+      fallback_models:
+        required: false
+        type: string
+        description: Fallback models to use for the API
+        default: null
+      max-description-tokens:
+        required: false
+        type: string
+        description: Maximum number of tokens for description
+        default: null
+      max-commits-tokens:
+        required: false
+        type: string
+        description: Maximum number of tokens for commits
+        default: null
+      max-model-tokens:
+        required: false
+        type: string
+        description: Maximum number of tokens for model
+        default: null
       auto-describe:
         required: false
         type: boolean
@@ -28,6 +58,46 @@ on:
         type: boolean
         description: Automatically improve the pull request
         default: true
+      pr-description-extra-instructions:
+        required: false
+        type: string
+        description: Extra instructions for the pull request description
+        default: null
+      pr-reviewer-extra-instructions:
+        required: false
+        type: string
+        description: Extra instructions for the pull request reviewer
+        default: null
+      pr-code-suggestions-extra-instructions:
+        required: false
+        type: string
+        description: Extra instructions for the pull request code suggestions
+        default: null
+      pr-update-changelog-extra-instructions:
+        required: false
+        type: string
+        description: Extra instructions for the pull request update changelog
+        default: null
+      openai-api-type:
+        required: false
+        type: string
+        description: Type for OpenAI API
+        default: null
+      openai-api-base:
+        required: false
+        type: string
+        description: Base URL for OpenAI API
+        default: null
+      openai-api-version:
+        required: false
+        type: string
+        description: Version for OpenAI API
+        default: null
+      openai-deployment-id:
+        required: false
+        type: string
+        description: Deployment ID for OpenAI API
+        default: null
     secrets:
       OPENAI_API_KEY:
         required: true
@@ -49,8 +119,22 @@ jobs:
         || github.event_name == 'workflow_call'
       )
     runs-on: ubuntu-latest
-    name: Run PR-agent
+    name: Run PR-agent using OpenAI API
     steps:
+      - name: Set environment variables
+        run: |
+          cat <<EOF | grep -ve '^[^=]*=$' | tee -a "${GITHUB_ENV}"
+          CONFIG.MODEL=${{ inputs.model }}
+          CONFIG.MODEL_TURBO=${{ inputs.model_turbo }}
+          CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models }}
+          CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
+          CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
+          CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
+          OPENAI.API_TYPE=${{ inputs.openai-api-type }}
+          OPENAI.API_BASE=${{ inputs.openai-api-base }}
+          OPENAI.API_VERSION=${{ inputs.openai-api-version }}
+          OPENAI.DEPLOYMENT_ID=${{ inputs.openai-deployment-id }}
+          EOF
       - name: Run PR-agent using OpenAI API
         uses: Codium-ai/pr-agent@main
         env:
@@ -60,3 +144,7 @@ jobs:
           GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: ${{ inputs.auto-describe || 'true' }}
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: ${{ inputs.auto-review || 'true' }}
           GITHUB_ACTION_CONFIG.AUTO_IMPROVE: ${{ inputs.auto-improve || 'true' }}
+          PR_DESCRIPTION.EXTRA_INSTRUCTIONS: ${{ inputs.pr-description-extra-instructions || null }}
+          PR_REVIEWER.EXTRA_INSTRUCTIONS: ${{ inputs.pr-reviewer-extra-instructions || null }}
+          PR_CODE_SUGGESTIONS.EXTRA_INSTRUCTIONS: ${{ inputs.pr-code-suggestions-extra-instructions || null }}
+          PR_UPDATE_CHANGELOG.EXTRA_INSTRUCTIONS: ${{ inputs.pr-update-changelog-extra-instructions || null }}
