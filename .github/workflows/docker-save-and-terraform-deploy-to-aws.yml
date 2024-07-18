@@ -183,6 +183,11 @@ on:
         type: string
         description: GitHub Actions runner to use
         default: ubuntu-latest
+      timeout-minutes:
+        required: false
+        type: number
+        description: Timeout in minutes for the job
+        default: 360
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -209,6 +214,7 @@ jobs:
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
       runs-on: ${{ inputs.runs-on }}
+      timeout-minutes: ${{ inputs.timeout-minutes }}
   pull:
     if: >
       inputs.apply && inputs.docker-image-name-to-target-stage-json == null
@@ -223,6 +229,7 @@ jobs:
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
       runs-on: ${{ inputs.runs-on }}
+      timeout-minutes: ${{ inputs.timeout-minutes }}
   deploy:
     if: always()
     needs:
@@ -248,3 +255,4 @@ jobs:
       docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
       docker-image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       runs-on: ${{ inputs.runs-on }}
+      timeout-minutes: ${{ inputs.timeout-minutes }}
