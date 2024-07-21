@@ -17,17 +17,17 @@ on:
         required: false
         type: string
         description: Model to use for the API
-        default: llama3-70b-8192
+        default: null
       model_turbo:
         required: false
         type: string
         description: Turbo model to use for the API
-        default: llama3-70b-8192
+        default: null
       fallback_models:
         required: false
         type: string
         description: Fallback models to use for the API
-        default: groq/llama3-70b-8192
+        default: null
       max-description-tokens:
         required: false
         type: string
@@ -98,6 +98,21 @@ on:
         type: string
         description: Deployment ID for OpenAI API
         default: null
+      aws-iam-role-to-assume:
+        required: false
+        type: string
+        description: AWS IAM role ARN to assume
+        default: null
+      aws-region:
+        required: false
+        type: string
+        description: AWS region to use
+        default: us-east-1
+      aws-profile-env-file:
+        required: false
+        type: string
+        description: Path to the file containing the AWS profile environment variables
+        default: null
     secrets:
       OPENAI_API_KEY:
         required: true
@@ -124,6 +139,22 @@ jobs:
     runs-on: ubuntu-latest
     name: Run PR-agent
     steps:
+      - name: Read AWS profile environment file
+        if: inputs.aws-profile-env-file != null
+        id: aws-profile-env
+        run: |
+          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
+      - name: Configure AWS credentials
+        if: >
+          inputs.aws-profile-env-file != null
+          || (
+            inputs.aws-iam-role-to-assume != null && steps.aws-profile-env.outputs.ROLE_ARN == null
+          )
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
+          aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
+          role-session-name: github-actions-${{ github.run_id }}
       - name: Set environment variables
         run: |
           {
@@ -145,6 +176,12 @@ jobs:
           		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'llama3-70b-8192' }}
           		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'groq/llama3-70b-8192' }}
           		GROQ.KEY=${{ secrets.GROQ_API_KEY }}
+          		EOF
+          	elif aws configure get region; then
+          		cat <<-EOF
+          		CONFIG.MODEL=${{ inputs.model || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
+          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
+          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'bedrock/anthropic.claude-3-sonnet-20240229-v1:0' }}
           		EOF
           	elif [[ -n '${{ secrets.OPENAI_API_KEY }}' ]]; then
           		cat <<-EOF
