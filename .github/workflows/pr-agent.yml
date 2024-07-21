@@ -17,17 +17,17 @@ on:
         required: false
         type: string
         description: Model to use for the API
-        default: null
+        default: llama3-70b-8192
       model_turbo:
         required: false
         type: string
         description: Turbo model to use for the API
-        default: null
+        default: llama3-70b-8192
       fallback_models:
         required: false
         type: string
         description: Fallback models to use for the API
-        default: null
+        default: groq/llama3-70b-8192
       max-description-tokens:
         required: false
         type: string
@@ -105,6 +105,9 @@ on:
       OPENAI_ORGANIZATION:
         required: false
         description: OpenAI organization
+      GROQ_API_KEY:
+        required: false
+        description: Groq API key
 permissions:
   contents: write
   pull-requests: write
@@ -119,32 +122,45 @@ jobs:
         || github.event_name == 'workflow_call'
       )
     runs-on: ubuntu-latest
-    name: Run PR-agent using OpenAI API
+    name: Run PR-agent
     steps:
       - name: Set environment variables
         run: |
-          cat <<EOF | grep -ve '^[^=]*=$' | tee -a "${GITHUB_ENV}"
-          CONFIG.MODEL=${{ inputs.model }}
-          CONFIG.MODEL_TURBO=${{ inputs.model_turbo }}
-          CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models }}
-          CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
-          CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
-          CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
-          OPENAI.API_TYPE=${{ inputs.openai-api-type }}
-          OPENAI.API_BASE=${{ inputs.openai-api-base }}
-          OPENAI.API_VERSION=${{ inputs.openai-api-version }}
-          OPENAI.DEPLOYMENT_ID=${{ inputs.openai-deployment-id }}
-          EOF
-      - name: Run PR-agent using OpenAI API
-        uses: Codium-ai/pr-agent@main
+          {
+          	cat <<-EOF
+          	CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
+          	CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
+          	CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
+          	GITHUB_ACTION_CONFIG.AUTO_DESCRIBE=${{ inputs.auto-describe || 'true' }}
+          	GITHUB_ACTION_CONFIG.AUTO_REVIEW=${{ inputs.auto-review || 'true' }}
+          	GITHUB_ACTION_CONFIG.AUTO_IMPROVE=${{ inputs.auto-improve || 'true' }}
+          	PR_DESCRIPTION.EXTRA_INSTRUCTIONS=${{ inputs.pr-description-extra-instructions }}
+          	PR_REVIEWER.EXTRA_INSTRUCTIONS=${{ inputs.pr-reviewer-extra-instructions }}
+          	PR_CODE_SUGGESTIONS.EXTRA_INSTRUCTIONS=${{ inputs.pr-code-suggestions-extra-instructions }}
+          	PR_UPDATE_CHANGELOG.EXTRA_INSTRUCTIONS=${{ inputs.pr-update-changelog-extra-instructions }}
+          	EOF
+          	if [[ -n '${{ secrets.GROQ_API_KEY }}' ]]; then
+          		cat <<-EOF
+          		CONFIG.MODEL=${{ inputs.model || 'llama3-70b-8192' }}
+          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'llama3-70b-8192' }}
+          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'groq/llama3-70b-8192' }}
+          		GROQ.KEY=${{ secrets.GROQ_API_KEY }}
+          		EOF
+          	elif [[ -n '${{ secrets.OPENAI_API_KEY }}' ]]; then
+          		cat <<-EOF
+          		CONFIG.MODEL=${{ inputs.model }}
+          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo }}
+          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models }}
+          		OPENAI.API_TYPE=${{ inputs.openai-api-type }}
+          		OPENAI.API_BASE=${{ inputs.openai-api-base }}
+          		OPENAI.API_VERSION=${{ inputs.openai-api-version }}
+          		OPENAI.DEPLOYMENT_ID=${{ inputs.openai-deployment-id }}
+          		OPENAI.KEY=${{ secrets.OPENAI_API_KEY }}
+          		OPENAI.ORG=${{ secrets.OPENAI_ORGANIZATION }}
+          		EOF
+          	fi
+          } | grep -ve '^[^=]*=$' | tee -a "${GITHUB_ENV}"
+      - name: Run PR-agent
+        uses: Codium-ai/pr-agent@v0.23
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_ORG: ${{ secrets.OPENAI_ORGANIZATION }}
-          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: ${{ inputs.auto-describe || 'true' }}
-          GITHUB_ACTION_CONFIG.AUTO_REVIEW: ${{ inputs.auto-review || 'true' }}
-          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: ${{ inputs.auto-improve || 'true' }}
-          PR_DESCRIPTION.EXTRA_INSTRUCTIONS: ${{ inputs.pr-description-extra-instructions || null }}
-          PR_REVIEWER.EXTRA_INSTRUCTIONS: ${{ inputs.pr-reviewer-extra-instructions || null }}
-          PR_CODE_SUGGESTIONS.EXTRA_INSTRUCTIONS: ${{ inputs.pr-code-suggestions-extra-instructions || null }}
-          PR_UPDATE_CHANGELOG.EXTRA_INSTRUCTIONS: ${{ inputs.pr-update-changelog-extra-instructions || null }}
