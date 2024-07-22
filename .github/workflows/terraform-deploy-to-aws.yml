@@ -130,7 +130,7 @@ jobs:
       - name: Set environment variables
         if: inputs.environment-variables-to-set != null
         run: |
-          echo "${{ inputs.environment-variables-to-set }}" >> "${GITHUB_ENV}"
+          echo '${{ inputs.environment-variables-to-set }}' >> "${GITHUB_ENV}"
       - name: Download the image tarball artifact
         if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
         uses: actions/download-artifact@v4

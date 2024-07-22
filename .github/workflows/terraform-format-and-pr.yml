@@ -1,5 +1,5 @@
 ---
-name: Formatter for Terraform
+name: Formatting for Terraform
 on:
   workflow_call:
     inputs:
@@ -70,7 +70,7 @@ jobs:
       - name: Format the code using terragrunt hclfmt
         if: inputs.terragrunt-version != null
         run: |
-          terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir ${{ inputs.search-path }}
+          terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir='${{ inputs.search-path }}'
       - name: Lint the code using TFLint
         if: inputs.lint-before-pr
         run: |
@@ -80,7 +80,7 @@ jobs:
         env:
           PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
-          if [[ -n "${{ inputs.terragrunt-version }}" ]]; then
+          if [[ -n '${{ inputs.terragrunt-version }}' ]]; then
             formatters='terraform and terragrunt'
           else
             formatters='terraform'

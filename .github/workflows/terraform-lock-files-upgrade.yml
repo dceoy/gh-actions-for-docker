@@ -1,12 +1,12 @@
 ---
-name: Terraform lock files upgrader for Terragrunt
+name: Upgrade for Terraform lock files
 on:
   workflow_call:
     inputs:
-      terragrunt-working-directories:
+      terraform-or-terragrunt-working-directories:
         required: false
         type: string
-        description: Working directories for Terragrunt (separated by spaces or returns)
+        description: Working directories for Terraform or Terragrunt (separated by spaces or returns)
         default: .
       terraform-version:
         required: false
@@ -17,7 +17,7 @@ on:
         required: false
         type: string
         description: Terragrunt version to use
-        default: latest
+        default: null
       runs-on:
         required: false
         type: string
@@ -31,7 +31,7 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  terragrunt-upgrade:
+  upgrade-and-commit:
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Checkout repository
@@ -41,6 +41,7 @@ jobs:
         with:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Install Terragrunt
+        if: inputs.terragrunt-version != null
         env:
           TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
@@ -56,10 +57,14 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
       - name: Upgrade Terraform lock files
         run: |
-          echo '${{ inputs.terragrunt-working-directories }}' \
+          if [[ -n '${{ inputs.terragrunt-version }}' ]]; then
+            cmd="terragrunt run-all init --terragrunt-working-directory='{}' -upgrade -reconfigure -backend=false"
+          else
+            cmd="terraform -chdir='{}' init -upgrade -reconfigure -backend=false"
+          fi
+          echo '${{ inputs.terraform-or-terragrunt-working-directories }}' \
             | tr ' ' '\n' \
-            | xargs -I{} -t terragrunt run-all init \
-              --terragrunt-working-directory='{}' -upgrade -reconfigure
+            | xargs -I{} -t bash -c "${cmd}"
       - name: Commit and push the changes
         uses: EndBug/add-and-commit@v9
         with:

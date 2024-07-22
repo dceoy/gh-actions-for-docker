@@ -61,9 +61,9 @@ jobs:
         if: inputs.lint-package
         shell: Rscript {0}
         run: |
-          lintr::lint_package(path = "${{ inputs.package-path }}")
+          lintr::lint_package(path = '${{ inputs.package-path }}')
       - name: Lint the code using lintr::lint_dir()
         if: (! inputs.lint-package)
         shell: Rscript {0}
         run: |
-          lintr::lint_dir(path = "${{ inputs.package-path }}")
+          lintr::lint_dir(path = '${{ inputs.package-path }}')

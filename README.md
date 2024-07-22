@@ -53,7 +53,7 @@ Reusable workflows
     - PR-agent
 
   - [python-package-format-and-pr.yml](.github/workflows/python-package-format-and-pr.yml)
-    - Formatter for Python
+    - Formatting for Python
 
   - [python-package-lint-and-scan.yml](.github/workflows/python-package-lint-and-scan.yml)
     - Lint and security scan for Python
@@ -65,7 +65,7 @@ Reusable workflows
     - Build using PyInstaller
 
   - [r-package-format-and-pr.yml](.github/workflows/r-package-format-and-pr.yml)
-    - Formatter for R
+    - Formatting for R
 
   - [r-package-lint.yml](.github/workflows/r-package-lint.yml)
     - Lint for R
@@ -77,16 +77,16 @@ Reusable workflows
     - Deployment of AWS resources using Terraform
 
   - [terraform-format-and-pr.yml](.github/workflows/terraform-format-and-pr.yml)
-    - Formatter for Terraform
+    - Formatting for Terraform
 
   - [terraform-lint-and-scan.yml](.github/workflows/terraform-lint-and-scan.yml)
     - Lint and security scan for Terraform
 
+  - [terraform-lock-files-upgrade.yml](.github/workflows/terraform-lock-files-upgrade.yml)
+    - Upgrade for Terraform lock files
+
   - [terragrunt-aws-switch-resources.yml](.github/workflows/terragrunt-aws-switch-resources.yml)
     - Switcher to apply or destroy AWS resources using Terragrunt
-
-  - [terragrunt-upgrade-lock-files.yml](.github/workflows/terragrunt-upgrade-lock-files.yml)
-    - Terraform lock files upgrader for Terragrunt
 
   - [toml-lint.yml](.github/workflows/toml-lint.yml)
     - Lint for TOML

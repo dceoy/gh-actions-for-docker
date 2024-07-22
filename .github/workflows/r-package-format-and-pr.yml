@@ -1,5 +1,5 @@
 ---
-name: Formatter for R
+name: Formatting for R
 on:
   workflow_call:
     inputs:
@@ -69,22 +69,22 @@ jobs:
         if: inputs.format-package
         shell: Rscript {0}
         run: |
-          styler::style_pkg(path = "${{ inputs.package-path }}")
+          styler::style_pkg(path = '${{ inputs.package-path }}')
       - name: Format the code using styler::style_dir()
         if: (! inputs.format-package)
         shell: Rscript {0}
         run: |
-          styler::style_dir(path = "${{ inputs.package-path }}")
+          styler::style_dir(path = '${{ inputs.package-path }}')
       - name: Lint the code using lintr::lint_package()
         if: inputs.lint-before-pr && inputs.format-package
         shell: Rscript {0}
         run: |
-          lintr::lint_package(path = "${{ inputs.package-path }}")
+          lintr::lint_package(path = '${{ inputs.package-path }}')
       - name: Lint the code using lintr::lint_dir()
         if: (! (inputs.lint-before-pr && inputs.format-package))
         shell: Rscript {0}
         run: |
-          lintr::lint_dir(path = "${{ inputs.package-path }}")
+          lintr::lint_dir(path = '${{ inputs.package-path }}')
       - name: Create output parameters
         id: parameters
         env:
