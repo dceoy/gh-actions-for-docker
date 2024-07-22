@@ -1,5 +1,5 @@
 ---
-name: Formatter for Python
+name: Formatting for Python
 on:
   workflow_call:
     inputs:
