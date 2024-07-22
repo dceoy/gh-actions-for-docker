@@ -101,7 +101,7 @@ jobs:
       create-new-tag: false
   dependabot-auto-merge:
     if: >
-      github.event_name == 'pull_request'
+      github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
     needs:
       - python-lint-and-scan
       - github-actions-lint
