@@ -202,7 +202,7 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: >
-          echo "${TAGS}" | xargs -t -I {} cosign sign --yes "{}@${DIGEST}"
+          echo "${TAGS}" | xargs -I{} -t cosign sign --yes "{}@${DIGEST}"
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
         uses: aquasecurity/trivy-action@0.24.0

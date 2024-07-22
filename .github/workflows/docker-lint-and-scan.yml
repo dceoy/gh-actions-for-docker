@@ -6,7 +6,7 @@ on:
       dockerfile-paths:
         required: false
         type: string
-        description: Paths to files to lint and scan (comma-separated list)
+        description: Paths to files to lint and scan (separated by spaces or returns)
         default: ./Dockerfile
       directory-to-scan:
         required: false
@@ -81,7 +81,7 @@ jobs:
           docker pull ghcr.io/hadolint/hadolint:latest
       - name: Lint the code using hadolint
         run: |
-          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ',' ' '); do
+          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ' ' '\n'); do
             docker run --rm -i ghcr.io/hadolint/hadolint:latest \
               hadolint ${{ inputs.hadolint-options }} - < "${p}"
           done

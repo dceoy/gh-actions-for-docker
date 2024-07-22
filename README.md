@@ -85,6 +85,9 @@ Reusable workflows
   - [terragrunt-aws-switch-resources.yml](.github/workflows/terragrunt-aws-switch-resources.yml)
     - Switcher to apply or destroy AWS resources using Terragrunt
 
+  - [terragrunt-upgrade-lock-files.yml](.github/workflows/terragrunt-upgrade-lock-files.yml)
+    - Terraform lock files upgrader for Terragrunt
+
   - [toml-lint.yml](.github/workflows/toml-lint.yml)
     - Lint for TOML
 
