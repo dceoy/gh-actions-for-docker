@@ -124,8 +124,6 @@ jobs:
   deploy:
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
-    env:
-      IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
     steps:
       - name: Set environment variables
         if: inputs.environment-variables-to-set != null
@@ -140,7 +138,7 @@ jobs:
       - name: Load the image tarball
         if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
         run: |
-          docker load -i "${IMAGE_TAR}"
+          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}.tar
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Terraform
