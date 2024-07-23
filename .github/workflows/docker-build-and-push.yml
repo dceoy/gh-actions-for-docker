@@ -68,11 +68,16 @@ on:
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
-      trivy-exit-code:
+      trivy-filesystem-exit-code:
         required: false
         type: number
-        description: Exit code for pre-build scan
+        description: Exit code for trivy filesystem
         default: 1
+      trivy-image-exit-code:
+        required: false
+        type: number
+        description: Exit code for trivy image
+        default: 0
       trivy-config:
         required: false
         type: string
@@ -151,7 +156,7 @@ jobs:
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: ${{ inputs.trivy-exit-code }}
+          exit-code: ${{ inputs.trivy-filesystem-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
           format: github
           output: dependency-results.sbom.json
@@ -212,7 +217,7 @@ jobs:
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: 0
+          exit-code: ${{ inputs.trivy-image-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
           format: sarif
           output: trivy-results.sarif
