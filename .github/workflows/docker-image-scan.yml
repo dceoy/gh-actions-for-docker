@@ -1,0 +1,103 @@
+---
+name: Security scan for Docker images
+on:
+  workflow_call:
+    inputs:
+      image-refs:
+        required: true
+        type: string
+        description: Image references (JSON array)
+      image-artifact-name:
+        required: false
+        type: string
+        description: Image tarball artifact name to download
+        default: null
+      registry:
+        required: false
+        type: string
+        description: Image registry to login
+        default: null
+      trivy-scanners:
+        required: false
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
+    secrets:
+      REGISTRY_USER:
+        required: false
+        description: Image registry user name
+      REGISTRY_TOKEN:
+        required: false
+        description: Image registry token
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  scan:
+    runs-on: ${{ inputs.runs-on }}
+    strategy:
+      matrix:
+        image-ref: ${{ fromJSON(inputs.image-refs) }}
+    steps:
+      - name: Download the image tarball artifact
+        if: inputs.image-artifact-name != null
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.image-artifact-name }}
+          path: /tmp/
+      - name: Load the image tarball
+        if: inputs.image-artifact-name != null
+        run: |
+          docker load -i /tmp/${{ inputs.image-artifact-name }}.tar
+      - name: Checkout repository
+        if: inputs.trivy-config != null
+        uses: actions/checkout@v4
+      - name: Login to the image registry
+        if: inputs.registry != null
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image-ref }}
+          scanners: ${{ inputs.trivy-scanners }}
+          severity: ${{ inputs.trivy-severity }}
+          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+          exit-code: 0
+          trivy-config: ${{ inputs.trivy-config }}
+          format: sarif
+          output: trivy-results-${{ strategy.job-index }}.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results-${{ strategy.job-index }}.sarif

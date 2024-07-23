@@ -177,7 +177,7 @@ jobs:
           		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'groq/llama3-70b-8192' }}
           		GROQ.KEY=${{ secrets.GROQ_API_KEY }}
           		EOF
-          	elif aws configure get region; then
+          	elif [[ -n '${{ inputs.aws-iam-role-to-assume }}' ]] || [[ -n '${{ steps.aws-profile-env.outputs.ROLE_ARN }}' ]]; then
           		cat <<-EOF
           		CONFIG.MODEL=${{ inputs.model || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
           		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
