@@ -25,6 +25,8 @@ on:
         type: boolean
         description: Create a new tag if the input tag does not exist
         default: false
+permissions:
+  contents: write  # IMPORTANT: mandatory for making GitHub Releases
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -32,8 +34,6 @@ defaults:
 jobs:
   github-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # IMPORTANT: mandatory for making GitHub Releases
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:

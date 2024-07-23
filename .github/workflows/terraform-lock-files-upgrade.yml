@@ -25,7 +25,6 @@ on:
         default: ubuntu-latest
 permissions:
   contents: write
-  pull-requests: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
