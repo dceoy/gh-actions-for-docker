@@ -127,6 +127,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  id-token: write
 jobs:
   pr-agent:
     if: >
@@ -159,9 +160,6 @@ jobs:
         run: |
           {
           	cat <<-EOF
-          	CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
-          	CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
-          	CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
           	GITHUB_ACTION_CONFIG.AUTO_DESCRIBE=${{ inputs.auto-describe || 'true' }}
           	GITHUB_ACTION_CONFIG.AUTO_REVIEW=${{ inputs.auto-review || 'true' }}
           	GITHUB_ACTION_CONFIG.AUTO_IMPROVE=${{ inputs.auto-improve || 'true' }}
@@ -172,9 +170,12 @@ jobs:
           	EOF
           	if [[ -n '${{ secrets.GROQ_API_KEY }}' ]]; then
           		cat <<-EOF
-          		CONFIG.MODEL=${{ inputs.model || 'llama-3.1-405b-reasoning' }}
-          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'llama-3.1-405b-reasoning' }}
-          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'llama-3.1-70b-versatile' }}
+          		CONFIG.MODEL=${{ inputs.model || 'groq/llama-3.1-405b-reasoning' }}
+          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'groq/llama-3.1-405b-reasoning' }}
+          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'groq/llama-3.1-70b-versatile' }}
+          		CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens || 8192 }}
+          		CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens || 8192 }}
+          		CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens || 8192 }}
           		GROQ.KEY=${{ secrets.GROQ_API_KEY }}
           		EOF
           	elif [[ -n '${{ inputs.aws-iam-role-to-assume }}' ]] || [[ -n '${{ steps.aws-profile-env.outputs.ROLE_ARN }}' ]]; then
@@ -182,12 +183,18 @@ jobs:
           		CONFIG.MODEL=${{ inputs.model || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
           		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0' }}
           		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'bedrock/anthropic.claude-3-sonnet-20240229-v1:0' }}
+          		CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
+          		CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
+          		CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
           		EOF
           	elif [[ -n '${{ secrets.OPENAI_API_KEY }}' ]]; then
           		cat <<-EOF
-          		CONFIG.MODEL=${{ inputs.model }}
-          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo }}
-          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models }}
+          		CONFIG.MODEL=${{ inputs.model || 'gpt-4o-mini-2024-07-18' }}
+          		CONFIG.MODEL_TURBO=${{ inputs.model_turbo || 'gpt-4o-mini-2024-07-18' }}
+          		CONFIG.FALLBACK_MODELS=${{ inputs.fallback_models || 'gpt-4o-mini' }}
+          		CONFIG.MAX_DESCRIPTION_TOKENS=${{ inputs.max-description-tokens }}
+          		CONFIG.MAX_COMMITS_TOKENS=${{ inputs.max-commits-tokens }}
+          		CONFIG.MAX_MODEL_TOKENS=${{ inputs.max-model-tokens }}
           		OPENAI.API_TYPE=${{ inputs.openai-api-type }}
           		OPENAI.API_BASE=${{ inputs.openai-api-base }}
           		OPENAI.API_VERSION=${{ inputs.openai-api-version }}
@@ -198,6 +205,6 @@ jobs:
           	fi
           } | grep -ve '^[^=]*=$' | tee -a "${GITHUB_ENV}"
       - name: Run PR-agent
-        uses: Codium-ai/pr-agent@v0.23
+        uses: Codium-ai/pr-agent@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
