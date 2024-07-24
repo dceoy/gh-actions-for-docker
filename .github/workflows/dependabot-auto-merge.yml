@@ -5,6 +5,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
 jobs:
   dependabot-auto-merge:
     runs-on: ubuntu-latest
