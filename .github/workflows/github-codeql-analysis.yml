@@ -6,22 +6,21 @@ on:
       language:
         required: false
         type: string
-        description: The language to analyze
+        description: The language to analyze (JSON array)
         default: python   # { c-cpp, csharp, go, java-kotlin, javascript-typescript, python, ruby, swift }
+permissions:
+  security-events: write  # required for all workflows
+  actions: read           # only required for workflows in private repositories
+  contents: read          # only required for workflows in private repositories
 jobs:
   analyze:
     name: Analyze
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
-    permissions:
-      security-events: write  # required for all workflows
-      actions: read           # only required for workflows in private repositories
-      contents: read          # only required for workflows in private repositories
     strategy:
       fail-fast: false
       matrix:
-        language:
-          - ${{ inputs.language }}
+        language: ${{ fromJSON(inputs.language) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -63,13 +63,13 @@ on:
         type: number
         description: Timeout in minutes for the job
         default: 360
+permissions:
+  contents: read    # This is required for actions/checkout
+  id-token: write   # This is required for requesting the JWT
 defaults:
   run:
     shell: bash -euo pipefail {0}
     working-directory: .
-permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
 jobs:
   start-or-stop:
     runs-on: ${{ inputs.runs-on }}
