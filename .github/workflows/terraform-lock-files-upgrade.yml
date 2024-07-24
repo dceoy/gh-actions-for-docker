@@ -3,21 +3,21 @@ name: Upgrade for Terraform lock files
 on:
   workflow_call:
     inputs:
-      terraform-or-terragrunt-working-directories:
+      terraform-working-directories:
         required: false
         type: string
-        description: Working directories for Terraform or Terragrunt (separated by spaces or returns)
+        description: Terraform working directories (separated by spaces or returns)
         default: .
+      terraform-working-directory-to-lock-file-json:
+        required: false
+        type: string
+        description: JSON object with Terraform working directories as keys and lock file directories as values
+        default: null
       terraform-version:
         required: false
         type: string
         description: Terraform version to use
         default: latest
-      terragrunt-version:
-        required: false
-        type: string
-        description: Terragrunt version to use
-        default: null
       runs-on:
         required: false
         type: string
@@ -41,31 +41,17 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - name: Install Terragrunt
-        if: inputs.terragrunt-version != null
-        env:
-          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
-        run: |
-          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
-          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
-            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-              | jq -r ".assets[] | select(.name | endswith(\"${arch_type}\")) | .browser_download_url" \
-              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
-          else
-            curl -sSL -o /usr/local/bin/terragrunt \
-              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
-          fi
-          chmod +x /usr/local/bin/terragrunt
       - name: Upgrade Terraform lock files
         run: |
-          if [[ -n '${{ inputs.terragrunt-version }}' ]]; then
-            cmd="terragrunt run-all init --terragrunt-working-directory='{}' -upgrade -reconfigure -backend=false"
+          if [[ -n '${{ inputs.terraform-working-directory-to-lock-file-json }}' ]]; then
+            echo '${{ inputs.terraform-working-directory-to-lock-file-json }}' \
+              | jq -r 'to_entries[] | "terraform -chdir=\(.key) init -lockfile=\(.value) -upgrade -reconfigure"' \
+              | xargs -L1 -t bash -c
           else
-            cmd="terraform -chdir='{}' init -upgrade -reconfigure -backend=false"
+            echo '${{ inputs.terraform-working-directories }}' \
+              | tr ' ' '\n' \
+              | xargs -I{} -t bash -c 'terraform -chdir={} init -backend=false -upgrade -reconfigure'
           fi
-          echo '${{ inputs.terraform-or-terragrunt-working-directories }}' \
-            | tr ' ' '\n' \
-            | xargs -I{} -t bash -c "${cmd}"
       - name: Commit and push the changes
         uses: EndBug/add-and-commit@v9
         with:

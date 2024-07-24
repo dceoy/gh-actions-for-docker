@@ -7,7 +7,8 @@ on:
         required: false
         type: string
         description: The language to analyze (JSON array)
-        default: python   # { c-cpp, csharp, go, java-kotlin, javascript-typescript, python, ruby, swift }
+        default: >
+          ["python"]
 permissions:
   security-events: write  # required for all workflows
   actions: read           # only required for workflows in private repositories
@@ -27,7 +28,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: ${{ matrix.language }}   # { c-cpp, csharp, go, java-kotlin, javascript-typescript, python, ruby, swift }
       - name: Autobuild   # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
         uses: github/codeql-action/autobuild@v3
       - name: Perform CodeQL Analysis
