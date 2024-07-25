@@ -6,9 +6,7 @@ services:
       context: ./src
       dockerfile: Dockerfile
     image: build-readme-md:latest
-    userns_mode: host
     network_mode: host
-    user: ${UID}:${GID}
     volumes:
       - ${PWD}:/wd
     working_dir: /wd/src

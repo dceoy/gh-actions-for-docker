@@ -8,10 +8,10 @@ on:
         type: string
         description: Terraform working directories (separated by spaces or returns)
         default: .
-      terraform-working-directory-to-lock-file-json:
+      terraform-lock-file-to-hcl-directory-json:
         required: false
         type: string
-        description: JSON object with Terraform working directories as keys and lock file directories as values
+        description: JSON object with Terraform lock file directories as keys and HCL directories as values
         default: null
       terraform-version:
         required: false
@@ -43,18 +43,27 @@ jobs:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Upgrade Terraform lock files
         run: |
-          if [[ -n '${{ inputs.terraform-working-directory-to-lock-file-json }}' ]]; then
-            echo '${{ inputs.terraform-working-directory-to-lock-file-json }}' \
-              | jq -r 'to_entries[] | "terraform -chdir=\(.key) init -lockfile=\(.value) -upgrade -reconfigure"' \
-              | xargs -L1 -t bash -c
+          if [[ -n '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' ]]; then
+            echo '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' \
+              | jq -r 'to_entries[] | "cd \(.value) && terraform init -upgrade -reconfigure -backend=false && mv .terraform.lock.hcl \(.key)"' \
+              | xargs -I{} -t bash -c '{}'
+            echo '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' \
+              | jq -c keys \
+              | xargs -I{} echo 'ADDED_PATHS={}' \
+              | tee -a "${GITHUB_ENV}"
           else
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} -t bash -c 'terraform -chdir={} init -backend=false -upgrade -reconfigure'
+            echo '${{ inputs.terraform-working-directories }}' \
+              | tr ' ' '\n' \
+              | jq -csR 'split("\n")[:-1]' \
+              | xargs -I{} echo 'ADDED_PATHS={}' \
+              | tee -a "${GITHUB_ENV}"
           fi
       - name: Commit and push the changes
         uses: EndBug/add-and-commit@v9
         with:
-          add: .
+          add: ${{ env.ADDED_PATHS }}
           message: Upgrade Terraform lock files
           push: true
