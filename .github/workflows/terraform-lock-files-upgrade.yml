@@ -8,10 +8,10 @@ on:
         type: string
         description: Terraform working directories (separated by spaces or returns)
         default: .
-      terraform-lock-file-to-hcl-directory-json:
+      terraform-working-directory-to-version-tf-json:
         required: false
         type: string
-        description: JSON object with Terraform lock file directories as keys and HCL directories as values
+        description: JSON object with Terraform working directories as keys and Terraform version files as values
         default: null
       terraform-version:
         required: false
@@ -43,11 +43,11 @@ jobs:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Upgrade Terraform lock files
         run: |
-          if [[ -n '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' ]]; then
-            echo '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' \
-              | jq -r 'to_entries[] | "cd \(.value) && terraform init -upgrade -reconfigure -backend=false && mv .terraform.lock.hcl \(.key)"' \
+          if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
+            echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
+              | jq -r 'to_entries[] | "cd \(.key) && cp \(.value) . && terraform init -upgrade -reconfigure -backend=false && rm -rf `basename \(.value)` .terraform' \
               | xargs -I{} -t bash -c '{}'
-            echo '${{ inputs.terraform-lock-file-to-hcl-directory-json }}' \
+            echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
               | jq -c keys \
               | xargs -I{} echo 'ADDED_PATHS={}' \
               | tee -a "${GITHUB_ENV}"
