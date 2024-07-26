@@ -45,7 +45,7 @@ jobs:
         run: |
           if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
-              | jq -r 'to_entries[] | "cd \(.key) && cp \(.value) . && terraform init -upgrade -reconfigure -backend=false && rm -rf `basename \(.value)` .terraform"' \
+              | jq -r 'to_entries[] | "cp \(.value) \(.key) && cd \(.key) && terraform init -upgrade -reconfigure -backend=false && rm -rf `basename \(.value)` .terraform"' \
               | xargs -I{} -t bash -c '{}'
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
               | jq -c keys \
