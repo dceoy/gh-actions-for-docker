@@ -13,6 +13,11 @@ on:
         type: string
         description: JSON object with Terraform working directories as keys and Terraform version files as values
         default: null
+      terragrunt-working-directories:
+        required: false
+        type: string
+        description: Terragrunt working directories (separated by spaces or returns)
+        default: null
       terraform-version:
         required: false
         type: string
@@ -42,28 +47,44 @@ jobs:
         with:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Upgrade Terraform lock files
+        env:
+          TERRAFORM_LOCK_FILE: .terraform.lock.hcl
+          UPDATED_FILES_TXT: /tmp/updated_files.${{ github.run_id }}.txt
         run: |
           if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
-              | jq -r 'to_entries[] | "cp \(.value) \(.key) && cd \(.key) && terraform init -upgrade -reconfigure -backend=false && rm -rf `basename \(.value)` .terraform"' \
+              | jq -r 'to_entries[] | "cp \(.value) \(.key) && cd \(.key) && terraform init -upgrade -reconfigure -backend=false && rm -rf $(basename \(.value)) .terraform"' \
               | xargs -I{} -t bash -c '{}'
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
-              | jq -c keys \
-              | xargs -I{} echo 'ADDED_PATHS={}' \
+              | jq -r 'keys[]' \
+              | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
+              | jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
+          elif [[ -n '${{ inputs.terragrunt-working-directories }}' ]]; then
+            echo '${{ inputs.terragrunt-working-directories }}' \
+              | tr ' ' '\n' \
+              | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
+              > "${UPDATED_FILES_TXT}"
+            xargs dirname < "${UPDATED_FILES_TXT}" \
+              | xargs realpath \
+              | xargs -I{} -t bash -c \
+                "cd \"{}/../../../modules/\$(basename {})\" && terraform init -upgrade -reconfigure -backend=false && mv ${TERRAFORM_LOCK_FILE} {} && rm -rf .terraform"
+            jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${UPDATED_FILES_TXT}" \
+              | tee -a "${GITHUB_ENV}"
+            rm -f "${UPDATED_FILES_TXT}"
           else
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} -t bash -c 'terraform -chdir={} init -backend=false -upgrade -reconfigure'
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
-              | jq -csR 'split("\n")[:-1]' \
-              | xargs -I{} echo 'ADDED_PATHS={}' \
+              | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
+              | jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
           fi
       - name: Commit and push the changes
         uses: EndBug/add-and-commit@v9
         with:
-          add: ${{ env.ADDED_PATHS }}
+          add: ${{ env.UPDATED_FILES_JSON }}
           message: Upgrade Terraform lock files
           push: true
