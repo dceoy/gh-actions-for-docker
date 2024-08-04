@@ -96,7 +96,7 @@ jobs:
           echo "${TAG_SOURCE_TO_TARGET_JSON}" \
             | jq -r 'to_entries[] | "docker tag \(.key) \(.value)"' \
             | xargs -L1 -t bash -c
-          echo "${TAG_SOURCE_TO_TARGET_JSON}" | jq -r '.[]' >> "${IMAGE_URI_LIST_TXT}"
+          echo "${TAG_SOURCE_TO_TARGET_JSON}" | jq -r 'values[]' >> "${IMAGE_URI_LIST_TXT}"
           sort -u -o "${IMAGE_URI_LIST_TXT}" "${IMAGE_URI_LIST_TXT}"
       - name: Save the Docker images to an image tarball
         run: |

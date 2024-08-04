@@ -58,7 +58,7 @@ jobs:
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
               | jq -r 'keys[]' \
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
-              | jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
+              | jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
           elif [[ -n '${{ inputs.terragrunt-working-directories }}' ]]; then
             echo '${{ inputs.terragrunt-working-directories }}' \
@@ -69,7 +69,7 @@ jobs:
               | xargs realpath \
               | xargs -I{} -t bash -c \
                 "cd \"{}/../../../modules/\$(basename {})\" && terraform init -upgrade -reconfigure -backend=false && mv ${TERRAFORM_LOCK_FILE} {} && rm -rf .terraform"
-            jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${UPDATED_FILES_TXT}" \
+            jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${UPDATED_FILES_TXT}" \
               | tee -a "${GITHUB_ENV}"
             rm -f "${UPDATED_FILES_TXT}"
           else
@@ -79,7 +79,7 @@ jobs:
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
-              | jq -srR 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
+              | jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
           fi
       - name: Commit and push the changes

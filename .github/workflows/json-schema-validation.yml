@@ -1,0 +1,71 @@
+---
+name: Schema validation for JSON
+on:
+  workflow_call:
+    inputs:
+      search-path:
+        required: false
+        type: string
+        description: Path to search for files
+        default: .
+      lint-before-validation:
+        required: false
+        type: boolean
+        description: Whether to lint JSON files before validation
+        default: true
+      jsonlint-options:
+        required: false
+        type: string
+        description: Options to pass to jsonlint
+        default: -q
+      schema-file-name:
+        required: false
+        type: string
+        description: JSON schema file name
+        default: '*.schema.json'
+      relative-path-from-schema-directory-to-data-files:
+        required: false
+        type: string
+        description: Relative path from JSON schema directory to JSON data directory
+        default: ./*.data.json
+      node-version:
+        required: false
+        type: string
+        description: Node.js version to use
+        default: latest
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  validation:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Install ajv-cli
+        run: |
+          npm install -g ajv-cli
+      - name: Install jsonlint
+        if: ${{ inputs.lint-before-validation }}
+        run: |
+          npm install -g jsonlint
+      - name: Lint JSON files using jsonlint
+        if: ${{ inputs.lint-before-validation }}
+        run: >
+          find ${{ inputs.search-path }} -type f -name '*.json' -print0
+          | xargs -0 -t jsonlint ${{ inputs.jsonlint-options }}
+      - name: Validate JSON files using ajv-cli
+        run: >
+          find ${{ inputs.search-path }} -name '${{ inputs.schema-file-name }}' -print0
+          | xargs -0 -I{} -t bash -c
+          "cd \"\$(dirname {})\" && ajv validate -s \"\$(basename {})\" -d '${{ inputs.relative-path-from-schema-directory-to-data-files }}'"
