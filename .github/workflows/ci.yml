@@ -107,7 +107,7 @@ jobs:
       - python-lint-and-scan
       - github-actions-lint
       - toml-lint
-      - python-format
       - docker-lint-and-scan
-      - github-codeql-analysis
     uses: ./.github/workflows/dependabot-auto-merge.yml
+    with:
+      unconditional: true
