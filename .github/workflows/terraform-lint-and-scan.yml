@@ -43,6 +43,8 @@ on:
         type: string
         description: GitHub Actions runner to use
         default: ubuntu-latest
+permissions:
+  contents: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -97,3 +99,5 @@ jobs:
           exit-code: ${{ inputs.trivy-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
           format: github
+          output: dependency-results.sbom.json
+          github-pat: ${{ secrets.GITHUB_TOKEN }}

@@ -115,7 +115,7 @@ on:
         default: null
     secrets:
       OPENAI_API_KEY:
-        required: true
+        required: false
         description: OpenAI API key
       OPENAI_ORGANIZATION:
         required: false

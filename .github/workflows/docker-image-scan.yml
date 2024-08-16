@@ -54,6 +54,8 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Registry token
+permissions:
+  contents: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -96,9 +98,6 @@ jobs:
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           exit-code: 0
           trivy-config: ${{ inputs.trivy-config }}
-          format: sarif
-          output: trivy-results-${{ strategy.job-index }}.sarif
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results-${{ strategy.job-index }}.sarif
+          format: github
+          output: dependency-results.${{ strategy.job-index }}.sbom.json
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
