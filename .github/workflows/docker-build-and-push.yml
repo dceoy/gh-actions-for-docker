@@ -32,7 +32,7 @@ on:
         required: false
         type: string
         description: List of target platforms for build
-        default: linux/amd64  # { linux/amd64, linux/arm64, linux/arm/v7 }
+        default: linux/amd64,linux/arm64
       cosign:
         required: false
         type: boolean
@@ -127,6 +127,7 @@ on:
         description: Registry token
 permissions:
   contents: write
+  packages: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
