@@ -78,7 +78,7 @@ jobs:
     with:
       registry: ghcr.io
       image-name: ${{ github.repository }}
-      platforms: linux/amd64
+      platforms: linux/amd64,linux/arm64
       context: ./src
       file: ./src/Dockerfile
       push: true
