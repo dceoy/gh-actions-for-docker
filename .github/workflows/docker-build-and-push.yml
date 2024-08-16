@@ -43,6 +43,11 @@ on:
         type: boolean
         description: Push an image to the registry
         default: true
+      load:
+        required: false
+        type: boolean
+        description: Load the image after building
+        default: false
       scan-before-build:
         required: false
         type: boolean
@@ -187,10 +192,23 @@ jobs:
           platforms: ${{ inputs.platforms }}
           push: ${{ inputs.push }}
           pull: true
-          load: true
+          load: ${{ inputs.load }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Sign the images with GitHub OIDC Token
+        if: inputs.cosign && inputs.push
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: >
+          echo "${TAGS}" | xargs -I{} -t cosign sign --yes "{}@${DIGEST}"
+      - name: Pull Docker images
+        if: inputs.push && (! inputs.load)
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: >
+          echo "${TAGS}" | xargs -L1 -t docker pull
       - name: Save the image as a tarball
         if: inputs.image-artifact-name != null
         env:
@@ -204,19 +222,12 @@ jobs:
           name: ${{ inputs.image-artifact-name }}
           path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.image-artifact-retention-days }}
-      - name: Sign the images with GitHub OIDC Token
-        if: inputs.cosign && inputs.push
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: >
-          echo "${TAGS}" | xargs -I{} -t cosign sign --yes "{}@${DIGEST}"
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: image
-          image-ref: ${{ steps.build-and-push.outputs.imageid }}
+          image-ref: ${{ fromJson(steps.meta.outputs.json).tags[0] }}
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
