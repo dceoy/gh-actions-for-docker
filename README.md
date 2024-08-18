@@ -49,6 +49,9 @@ Reusable workflows
   - [json-lint.yml](.github/workflows/json-lint.yml)
     - Lint for JSON
 
+  - [json-schema-validation.yml](.github/workflows/json-schema-validation.yml)
+    - Schema validation for JSON
+
   - [microsoft-defender-for-devops.yml](.github/workflows/microsoft-defender-for-devops.yml)
     - Microsoft Defender for Devops
 
