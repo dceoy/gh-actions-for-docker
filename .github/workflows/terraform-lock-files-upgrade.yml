@@ -23,6 +23,11 @@ on:
         type: string
         description: Terraform version to use
         default: latest
+      pr-branch-prefix-to-merge:
+        required: false
+        type: string
+        description: Prefix of the pull request branch to merge
+        default: dependabot/terraform/
       runs-on:
         required: false
         type: string
@@ -46,6 +51,17 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
+      - name: Merge pull request branches
+        if: github.event_name == 'pull_request' && inputs.pr-branch-prefix-to-merge != null
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_BRANCH: ${{ github.head_ref }}
+        run: |
+          gh pr list --state open --json headRefName --jq '.[].headRefName' \
+            | grep -e '^${{ inputs.pr-branch-prefix-to-merge }}' \
+            | grep -ve "^${CURRENT_BRANCH}$" \
+            | xargs -I{} -t bash -c 'git fetch origin {} && git merge --no-edit origin/{}'
+          git push origin "${CURRENT_BRANCH}"
       - name: Upgrade Terraform lock files
         env:
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
