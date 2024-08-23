@@ -60,7 +60,7 @@ jobs:
           gh pr list --state open --json headRefName --jq '.[].headRefName' \
             | grep -e '^${{ inputs.pr-branch-prefix-to-merge }}' \
             | grep -ve "^${CURRENT_BRANCH}$" \
-            | xargs -I{} -t bash -c 'git fetch origin {} && git merge --no-edit origin/{}'
+            | xargs -I{} -t bash -c 'git fetch origin {} && git merge --allow-unrelated-histories --no-edit origin/{}'
           git push origin "${CURRENT_BRANCH}"
       - name: Upgrade Terraform lock files
         env:
