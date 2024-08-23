@@ -57,6 +57,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CURRENT_BRANCH: ${{ github.head_ref }}
         run: |
+          git log -1 --pretty=format:'%an' | xargs -t git config user.name
+          git log -1 --pretty=format:'%ae' | xargs -t git config user.email
           gh pr list --state open --json headRefName --jq '.[].headRefName' \
             | grep -e '^${{ inputs.pr-branch-prefix-to-merge }}' \
             | grep -ve "^${CURRENT_BRANCH}$" \
