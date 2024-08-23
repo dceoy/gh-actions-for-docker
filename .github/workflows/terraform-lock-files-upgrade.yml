@@ -52,7 +52,7 @@ jobs:
         with:
           terraform_version: ${{ inputs.terraform-version }}
       - name: Merge pull request branches
-        if: github.event_name == 'pull_request' && inputs.pr-branch-prefix-to-merge != null
+        if: github.event_name == 'pull_request' && inputs.pr-branch-prefix-to-merge != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CURRENT_BRANCH: ${{ github.head_ref }}
