@@ -143,6 +143,10 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     env:
       IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+    outputs:
+      imageid: ${{ steps.docker-build.outputs.imageid }}
+      digest: ${{ steps.docker-build.outputs.digest }}
+      metadata: ${{ steps.docker-build.outputs.metadata }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -182,7 +186,7 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build and push an image
-        id: build-and-push
+        id: docker-build
         uses: docker/build-push-action@v6
         with:
           tags: ${{ steps.meta.outputs.tags }}
@@ -200,7 +204,7 @@ jobs:
         if: inputs.cosign && inputs.push
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+          DIGEST: ${{ steps.docker-build.outputs.digest }}
         run: >
           echo "${TAGS}" | xargs -I{} -t cosign sign --yes "{}@${DIGEST}"
       - name: Pull Docker images
