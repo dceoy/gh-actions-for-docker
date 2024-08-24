@@ -70,10 +70,13 @@ jobs:
           ref: ${{ matrix.head_ref }}
       - name: Create a pull request
         uses: peter-evans/create-pull-request@v6
+        env:
+          PR_TITLE: Merge ${{ matrix.head_ref }} into ${{ matrix.base_ref }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          title: ${{ env.PR_TITLE }}
           base: ${{ matrix.base_ref }}
+          branch: autopr/${{ matrix.head_ref }}
           labels: automated pr
-          title: Merge ${{ matrix.head_ref }} into ${{ matrix.base_ref }}
-          delete-branch: false
+          delete-branch: true
           draft: false
