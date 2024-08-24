@@ -132,6 +132,16 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Registry token
+    outputs:
+      metadata-json:
+        description: Metadata JSON extracted from Git reference and GitHub events
+        value: ${{ jobs.build-and-push.outputs.metadata-json }}
+      build-push-imageid:
+        description: Docker image ID
+        value: ${{ jobs.build-and-push.outputs.build-push-imageid }}
+      build-push-digest:
+        description: Docker image digest
+        value: ${{ jobs.build-and-push.outputs.build-push-digest }}
 permissions:
   contents: write
   packages: write
@@ -175,7 +185,7 @@ jobs:
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract Docker metadata
+      - name: Extract metadata from Git reference and GitHub events
         id: meta
         uses: docker/metadata-action@v5.5.1
         with:
