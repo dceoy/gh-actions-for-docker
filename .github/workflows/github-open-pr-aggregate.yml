@@ -1,0 +1,79 @@
+---
+name: Aggregate open pull requests
+on:
+  workflow_call:
+    inputs:
+      pr-branch-prefix:
+        required: false
+        type: string
+        description: Prefix of the branches to merge (e.g., dependabot/terraform/)
+        default: null
+      runs-on:
+        required: false
+        type: string
+        description: GitHub Actions runner to use
+        default: ubuntu-latest
+permissions:
+  contents: write
+  pull-requests: write
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  list-prs:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      base_ref_json: ${{ steps.list-open-prs.outputs.base_ref_json }}
+      head_ref_json: ${{ steps.list-open-prs.outputs.head_ref_json }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: List open pull requests
+        id: list-open-prs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH_PREFIX: ${{ inputs.pr-branch-prefix }}
+        run: |
+          pr_branches="$( \
+            gh pr list --state open --json headRefName \
+              --jq ".[].headRefName | select(. | startswith(\"${PR_BRANCH_PREFIX}\"))" \
+              | tac \
+          )"
+          if [[ $(wc -l <<< "${pr_branches}") -le 1 ]]; then
+            echo 'base_ref_json=' | tee -a "${GITHUB_OUTPUT}"
+            echo 'head_ref_json=' | tee -a "${GITHUB_OUTPUT}"
+          else
+            head -n 1 <<< "${pr_branches}" \
+              | jq -rRs 'split("\n")[:-1] | "base_ref_json=\(.)"' \
+              | tee -a "${GITHUB_OUTPUT}"
+            tail -n +2 <<< "${pr_branches}" \
+              | jq -rRs 'split("\n")[:-1] | "head_ref_json=\(.)"' \
+              | tee -a "${GITHUB_OUTPUT}"
+          fi
+  create-prs:
+    needs:
+      - list-prs
+    if: >
+      needs.list-prs.outputs.base_ref_json != '[]'
+      && needs.list-prs.outputs.head_ref_json != '[]'
+    runs-on: ${{ inputs.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        base_ref: ${{ fromJson(needs.list-prs.outputs.base_ref_json) }}
+        head_ref: ${{ fromJson(needs.list-prs.outputs.head_ref_json) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.head_ref }}
+      - name: Create a pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: ${{ matrix.base_ref }}
+          labels: automated pr
+          title: Merge ${{ matrix.head_ref }} into ${{ matrix.base_ref }}
+          delete-branch: false
+          draft: false

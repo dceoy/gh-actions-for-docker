@@ -23,11 +23,6 @@ on:
         type: string
         description: Terraform version to use
         default: latest
-      pr-branch-prefix-to-merge:
-        required: false
-        type: string
-        description: Prefix of the branches to merge
-        default: dependabot/terraform/
       runs-on:
         required: false
         type: string
@@ -35,7 +30,6 @@ on:
         default: ubuntu-latest
 permissions:
   contents: write
-  pull-requests: write
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -52,27 +46,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - name: Merge the changes in the open pull request branches
-        if: github.event_name == 'pull_request' && inputs.pr-branch-prefix-to-merge != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_BRANCH_PREFIX: ${{ inputs.pr-branch-prefix-to-merge }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          git log -1 --pretty=format:'%an' | xargs -t git config user.name
-          git log -1 --pretty=format:'%ae' | xargs -t git config user.email
-          prs="$( \
-            gh pr list --state open --json headRefName,number \
-              --jq ".[] | select(.headRefName | startswith(\"${PR_BRANCH_PREFIX}\")).number" \
-          )"
-          echo "${prs}" | xargs -I{} -t gh pr checkout {} --branch 'pr/{}'
-          git switch "pr/${PR_NUMBER}"
-          echo "${prs}" \
-            | grep -ve "^pr/${PR_NUMBER}$" \
-            | xargs -I{} -t git merge --allow-unrelated-histories --no-edit pr/{}
-          git switch "${HEAD_REF}"
-          git merge --allow-unrelated-histories --no-edit -s recursive -X theirs "pr/${PR_NUMBER}"
       - name: Upgrade Terraform lock files
         env:
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl

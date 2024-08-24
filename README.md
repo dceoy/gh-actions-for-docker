@@ -43,6 +43,9 @@ Reusable workflows
   - [github-codeql-analysis.yml](.github/workflows/github-codeql-analysis.yml)
     - GitHub CodeQL Analysis
 
+  - [github-open-pr-aggregate.yml](.github/workflows/github-open-pr-aggregate.yml)
+    - Aggregate open pull requests
+
   - [github-release.yml](.github/workflows/github-release.yml)
     - Release on GitHub
 
