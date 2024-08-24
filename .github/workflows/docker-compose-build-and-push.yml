@@ -28,6 +28,11 @@ on:
         type: string
         description: The registry to push the image to
         default: docker.io  # { docker.io, ghcr.io }
+      registry-user:
+        required: false
+        type: string
+        description: Registry username
+        default: ${{ github.actor }}
       runs-on:
         required: false
         type: string
@@ -39,9 +44,6 @@ on:
         description: Timeout in minutes for the job
         default: 360
     secrets:
-      DOCKER_USER:
-        required: false
-        description: Docker user name
       DOCKER_TOKEN:
         required: false
         description: Docker token
@@ -65,7 +67,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.DOCKER_USER }}
+          username: ${{ inputs.registry-user }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build images
         run: >

@@ -8,6 +8,11 @@ on:
         type: string
         description: Registry to push the image to
         default: docker.io  # { docker.io, ghcr.io }
+      registry-user:
+        required: false
+        type: string
+        description: Registry username
+        default: ${{ github.actor }}
       image-name:
         required: false
         type: string
@@ -124,9 +129,6 @@ on:
         description: Timeout in minutes for the job
         default: 360
     secrets:
-      DOCKER_USER:
-        required: false
-        description: Registry user name
       DOCKER_TOKEN:
         required: false
         description: Registry token
@@ -144,9 +146,9 @@ jobs:
     env:
       IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
     outputs:
-      imageid: ${{ steps.docker-build.outputs.imageid }}
-      digest: ${{ steps.docker-build.outputs.digest }}
-      metadata: ${{ steps.docker-build.outputs.metadata }}
+      metadata-json: ${{ steps.meta.outputs.json }}
+      build-push-imageid: ${{ steps.docker-build.outputs.imageid }}
+      build-push-digest: ${{ steps.docker-build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -183,7 +185,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.DOCKER_USER }}
+          username: ${{ inputs.registry-user }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build and push an image
         id: docker-build

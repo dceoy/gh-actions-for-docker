@@ -17,6 +17,11 @@ on:
         type: string
         description: Image registry to login
         default: null
+      registry-user:
+        required: false
+        type: string
+        description: Registry username
+        default: ${{ github.actor }}
       trivy-scanners:
         required: false
         type: string
@@ -48,9 +53,6 @@ on:
         description: GitHub Actions runner to use
         default: ubuntu-latest
     secrets:
-      DOCKER_USER:
-        required: false
-        description: Registry user name
       DOCKER_TOKEN:
         required: false
         description: Registry token
@@ -86,7 +88,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.DOCKER_USER }}
+          username: ${{ inputs.registry-user }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
