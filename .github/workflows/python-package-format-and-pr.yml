@@ -71,9 +71,21 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
+        env:
+          POETRY_HOME: /opt/poetry
+        working-directory: ${{ inputs.package-path }}
         run: >
-          pip install -U --no-cache-dir black isort ruff
-          ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
+          if [[ -f poetry.lock ]]; then
+            pip install -U --no-cache-dir poetry
+            poetry lock --no-update --no-interaction
+            poetry add --group=dev --no-interaction \
+              black isort ruff ${{ inputs.pypi-packages }}
+            poetry install --no-interaction
+            echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
+          else
+            pip install -U --no-cache-dir \
+              black isort ruff ${{ inputs.pypi-packages }} .
+          fi
       - name: Format the code using black
         if: inputs.use-black
         run: >
