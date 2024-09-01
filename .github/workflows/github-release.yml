@@ -37,7 +37,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
-      - name: Validate the consistency
+      - name: Validate the tag consistency
         if: >
           startsWith(github.ref, 'refs/tags/') && inputs.tag-name != null
           && github.ref_name != inputs.tag-name
