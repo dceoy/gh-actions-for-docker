@@ -8,6 +8,11 @@ on:
         type: string
         description: Path to a Python package or project
         default: .
+      create-releases:
+        required: false
+        type: boolean
+        description: Create GitHub and PyPI releases
+        default: true
       python-version:
         required: false
         type: string
@@ -44,13 +49,19 @@ jobs:
         working-directory: ${{ inputs.package-path }}
         shell: python3 {0}
         run: |
+          import os
           import tomllib
-          with open('pyproject.toml', 'rb') as f:
+          with open("pyproject.toml", "rb") as f:
               d = tomllib.load(f)
-              name = (d.get('project') or d.get('tool.poetry') or dict()).get('name')
-          assert name, 'project name not found'
-          with open('${GITHUB_OUTPUT}', 'a') as f:
-              print(f'project-name={name}', file=f)
+          if "project" in d and "name" in d["project"]:
+              name = d["project"]["name"]
+          elif "tool" in d and "poetry" in d["tool"] and "name" in d["tool"]["poetry"]:
+              name = d["tool"]["poetry"]["name"]
+          else:
+              raise ValueError(f"project name not found in pyproject.toml: {d}")
+          print(f"project-name={name}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              print(f"project-name={name}", file=f)
       - name: Build a binary wheel and a source tarball
         working-directory: ${{ inputs.package-path }}
         run: |
@@ -69,7 +80,8 @@ jobs:
           path: /tmp/${{ steps.read-project-name.outputs.project-name }}_dist/
   publish-to-testpypi:
     name: Publish the Python 🐍 distribution 📦 to TestPyPI
-    if: startsWith(github.ref, 'refs/tags/')
+    if: >
+      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
     needs:
       - build
     runs-on: ${{ inputs.runs-on }}
@@ -90,7 +102,8 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
   github-release:
     name: Sign the Python 🐍 distribution 📦 with Sigstore and upload them to GitHub Release
-    if: startsWith(github.ref, 'refs/tags/')
+    if: >
+      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
     needs:
       - build
       - publish-to-testpypi
@@ -125,7 +138,8 @@ jobs:
           gh release upload ${{ github.ref_name }} dist/** --repo ${{ github.repository }}
   publish-to-pypi:
     name: Publish the Python 🐍 distribution 📦 to PyPI
-    if: startsWith(github.ref, 'refs/tags/')
+    if: >
+      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
     needs:
       - build
       - publish-to-testpypi
