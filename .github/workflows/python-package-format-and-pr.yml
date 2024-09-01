@@ -17,7 +17,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to black
-        default: --exclude=build
+        default: --exclude=build --line-length=79
       ruff-format-options:
         required: false
         type: string
@@ -79,12 +79,12 @@ jobs:
             pip install -U --no-cache-dir poetry
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
-              black isort ruff ${{ inputs.pypi-packages }}
+              isort ${{ inputs.use-black && 'black' || 'ruff' }} ${{ inputs.pypi-packages }}
             poetry install --no-interaction
             echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              black isort ruff ${{ inputs.pypi-packages }} .
+              isort ${{ inputs.use-black && 'black' || 'ruff' }} ${{ inputs.pypi-packages }}
           fi
       - name: Format the code using black
         if: inputs.use-black
