@@ -58,9 +58,19 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
-        run: >
-          pip install -U --no-cache-dir flake8 ruff mypy bandit
-          ${{ inputs.pypi-packages }} ${{ inputs.package-path }}
+        working-directory: ${{ inputs.package-path }}
+        run: |
+          if [[ -f poetry.lock ]]; then
+            pip install -U --no-cache-dir poetry
+            poetry lock --no-update --no-interaction
+            poetry add --group=dev --no-interaction \
+              flake8 ruff mypy bandit ${{ inputs.pypi-packages }}
+            poetry install --no-interaction
+            echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
+          else
+            pip install -U --no-cache-dir \
+              flake8 ruff mypy bandit ${{ inputs.pypi-packages }} .
+          fi
       - name: Lint the code using flake8
         run: >
           flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
