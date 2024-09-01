@@ -17,22 +17,22 @@ on:
         required: false
         type: string
         description: Additional options to pass to flake8
-        default: --exclude=build
+        default: null
       ruff-check-options:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: --exclude=build
+        default: null
       mypy-options:
         required: false
         type: string
         description: Additional options to pass to mypy
-        default: --exclude=build --install-types --non-interactive
+        default: --install-types --non-interactive
       bandit-options:
         required: false
         type: string
         description: Additional options to pass to bandit
-        default: --exclude=build --recursive
+        default: --recursive
       pypi-packages:
         required: false
         type: string
@@ -65,11 +65,11 @@ jobs:
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
               flake8 ruff mypy bandit ${{ inputs.pypi-packages }}
-            poetry install --no-interaction
+            poetry install --no-interaction --no-root
             echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              flake8 ruff mypy bandit ${{ inputs.pypi-packages }} .
+              flake8 ruff mypy bandit ${{ inputs.pypi-packages }}
           fi
       - name: Lint the code using flake8
         run: >

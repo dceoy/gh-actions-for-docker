@@ -57,7 +57,8 @@ jobs:
       go-version: stable
   python-format:
     if: >
-      github.event_name == 'pull_request'
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'format')
     uses: ./.github/workflows/python-package-format-and-pr.yml
     with:

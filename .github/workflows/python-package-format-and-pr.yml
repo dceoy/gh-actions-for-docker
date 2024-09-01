@@ -17,12 +17,12 @@ on:
         required: false
         type: string
         description: Additional options to pass to black
-        default: --exclude=build --line-length=79
+        default: --line-length=79
       ruff-format-options:
         required: false
         type: string
         description: Additional options to pass to ruff format
-        default: --exclude=build --line-length=79
+        default: --line-length=79
       isort-options:
         required: false
         type: string
@@ -32,7 +32,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: --exclude=build
+        default: null
       use-black:
         required: false
         type: boolean

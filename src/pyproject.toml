@@ -22,15 +22,30 @@ flake8 = "^7.1.1"
 flake8-bugbear = "^24.8.19"
 flake8-isort = "^6.1.1"
 pep8-naming = "^0.14.1"
-mypy = "^1.11.2"
 ruff = "^0.6.3"
 isort = "^5.13.2"
+mypy = "^1.11.2"
+flake8-pyproject = "^1.2.3"
+types-pyyaml = "^6.0.12.20240808"
 
 [tool.flake8]
 max-line-length = 88
+exclude = ["build"]
 
 [tool.ruff]
 line-length = 88
+exclude = ["build"]
 
 [tool.isort]
 line_length = 88
+skip = ["build"]
+
+[tool.mypy]
+install_types = false
+non_interactive = true
+ignore_missing_imports = true
+exclude = ["build"]
+
+[tool.bandit]
+recursive = true
+exclude_dirs = ["build"]
