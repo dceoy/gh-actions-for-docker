@@ -27,6 +27,7 @@ isort = "^5.13.2"
 mypy = "^1.11.2"
 flake8-pyproject = "^1.2.3"
 types-pyyaml = "^6.0.12.20240808"
+pyright = "^1.1.379"
 
 [tool.flake8]
 max-line-length = 88

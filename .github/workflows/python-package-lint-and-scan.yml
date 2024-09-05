@@ -28,6 +28,11 @@ on:
         type: string
         description: Additional options to pass to mypy
         default: --install-types --non-interactive
+      pyright-options:
+        required: false
+        type: string
+        description: Additional options to pass to pyright
+        default: null
       bandit-options:
         required: false
         type: string
@@ -64,22 +69,26 @@ jobs:
             pip install -U --no-cache-dir poetry
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
-              flake8 ruff mypy bandit ${{ inputs.pypi-packages }}
+              flake8 ruff mypy pyright bandit ${{ inputs.pypi-packages }}
             poetry install --no-interaction --no-root
-            echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
+            echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              flake8 ruff mypy bandit ${{ inputs.pypi-packages }}
+              flake8 ruff mypy pyright bandit ${{ inputs.pypi-packages }}
+            echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
           fi
       - name: Lint the code using flake8
         run: >
-          flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
       - name: Lint the code using ruff
         run: >
-          ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
-      - name: Lint the code using mypy
+          ${{ env.EXECUTOR }} ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
+      - name: Check types using mypy
         run: >
-          mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
+      - name: Check types using pyright
+        run: >
+          ${{ env.EXECUTOR }} pyright ${{ inputs.pyright-options }} ${{ inputs.package-path }}
       - name: Find security issues using bandit
         run: >
-          bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}

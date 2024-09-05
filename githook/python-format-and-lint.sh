@@ -9,13 +9,15 @@ if [[ -f "${package_directory}/poetry.lock" ]]; then
   poetry run isort .
   poetry run flake8 .
   poetry run ruff check .
-  poetry run mypy .
+  # poetry run mypy .
+  poetry run pyright .
   poetry run bandit .
 else
   ruff format --exclude=build --line-length=79 .
   isort --skip-glob=build .
   flake8 --exclude=build .
   ruff check --exclude=build .
-  mypy --exclude=build --install-types --non-interactive --ignore-missing-imports .
+  # mypy --exclude=build --install-types --non-interactive --ignore-missing-imports .
+  pyright --exclude=build .
   bandit --exclude=build --recursive .
 fi
