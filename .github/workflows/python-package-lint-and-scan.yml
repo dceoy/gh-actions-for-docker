@@ -75,6 +75,9 @@ jobs:
           else
             pip install -U --no-cache-dir \
               flake8 ruff mypy pyright bandit ${{ inputs.pypi-packages }}
+            if [[ -f requirements.txt ]]; then
+              pip install -U --no-cache-dir -r requirements.txt
+            fi
             echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
           fi
       - name: Lint the code using flake8
