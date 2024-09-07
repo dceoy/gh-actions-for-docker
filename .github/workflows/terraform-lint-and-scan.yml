@@ -38,6 +38,11 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      terraform-validate:
+        required: false
+        type: boolean
+        description: Validate Terraform code
+        default: true
       runs-on:
         required: false
         type: string
@@ -101,3 +106,11 @@ jobs:
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate the code using terraform validate
+        if: inputs.terraform-validate
+        run: |
+          find ${{ inputs.search-path }} -type f -name '*.tf' -exec dirname {} \; \
+            | sort -u \
+            | grep -ve '/\.' \
+            | xargs -I{} -t bash -c \
+              'terraform -chdir={} init -backend=false && terraform -chdir={} validate'

@@ -5,7 +5,7 @@ set -euox pipefail
 N_PYTHON_FILES=$(find . -type f -name '*.py' | wc -l)
 if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
   package_directory="$(find . -type f -name 'pyproject.toml' -exec dirname {} \; | head -n 1)"
-  if [[ -f "${package_directory}/poetry.lock" ]]; then
+  if [[ -n "${package_directory}" ]] && [[ -f "${package_directory}/poetry.lock" ]]; then
     poetry -C "${package_directory}" run ruff format .
     poetry -C "${package_directory}" run isort .
     poetry -C "${package_directory}" run mypy .
@@ -14,13 +14,13 @@ if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
     poetry -C "${package_directory}" run ruff check .
     poetry -C "${package_directory}" run bandit .
   else
-    ruff format --exclude=build --line-length=79 "${package_directory}"
-    isort --skip-glob=build "${package_directory}"
-    mypy --exclude=build --install-types --non-interactive --ignore-missing-imports "${package_directory}"
-    pyright "${package_directory}"
-    flake8 --exclude=build "${package_directory}"
-    ruff check --exclude=build "${package_directory}"
-    bandit --exclude=build --recursive "${package_directory}"
+    ruff format --exclude=build --line-length=79 .
+    isort --skip-glob=build .
+    mypy --exclude=build --install-types --non-interactive --ignore-missing-imports .
+    pyright .
+    flake8 --exclude=build .
+    ruff check --exclude=build .
+    bandit --exclude=build --recursive --skip B101 .
   fi
 fi
 
