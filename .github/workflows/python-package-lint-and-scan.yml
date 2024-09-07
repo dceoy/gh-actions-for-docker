@@ -32,7 +32,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to pyright
-        default: null
+        default: --threads 0
       bandit-options:
         required: false
         type: string

@@ -17,17 +17,17 @@ on:
         required: false
         type: string
         description: Additional options to pass to black
-        default: --line-length=79
+        default: --line-length=88
       ruff-format-options:
         required: false
         type: string
         description: Additional options to pass to ruff format
-        default: --line-length=79
+        default: --line-length=88
       isort-options:
         required: false
         type: string
         description: Additional options to pass to isort
-        default: --skip-glob=build
+        default: --skip-glob=build --profile=black
       ruff-check-options:
         required: false
         type: string

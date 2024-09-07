@@ -2,24 +2,33 @@
 
 set -euox pipefail
 
+PYTHON_LINE_LENGTH=88
 N_PYTHON_FILES=$(find . -type f -name '*.py' | wc -l)
 if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
-  package_directory="$(find . -type f -name 'pyproject.toml' -exec dirname {} \; | head -n 1)"
-  if [[ -n "${package_directory}" ]] && [[ -f "${package_directory}/poetry.lock" ]]; then
-    poetry -C "${package_directory}" run ruff format .
-    poetry -C "${package_directory}" run isort .
-    poetry -C "${package_directory}" run mypy .
-    poetry -C "${package_directory}" run pyright .
-    poetry -C "${package_directory}" run flake8 .
-    poetry -C "${package_directory}" run ruff check .
-    poetry -C "${package_directory}" run bandit .
-  else
-    ruff format --exclude=build --line-length=79 .
-    isort --skip-glob=build .
-    mypy --exclude=build --install-types --non-interactive --ignore-missing-imports .
+  PACKAGE_DIRECTORY="$(find . -type f -name 'pyproject.toml' -exec dirname {} \; | head -n 1)"
+  if [[ -n "${PACKAGE_DIRECTORY}" ]] && [[ -f "${PACKAGE_DIRECTORY}/poetry.lock" ]]; then
+    poetry -C "${PACKAGE_DIRECTORY}" run ruff format .
+    poetry -C "${PACKAGE_DIRECTORY}" run isort .
+    poetry -C "${PACKAGE_DIRECTORY}" run mypy .
+    poetry -C "${PACKAGE_DIRECTORY}" run pyright .
+    poetry -C "${PACKAGE_DIRECTORY}" run flake8 .
+    poetry -C "${PACKAGE_DIRECTORY}" run ruff check .
+    poetry -C "${PACKAGE_DIRECTORY}" run bandit .
+  elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
+    ruff format .
+    isort .
+    mypy .
     pyright .
-    flake8 --exclude=build .
-    ruff check --exclude=build .
+    flake8 .
+    ruff check .
+    bandit .
+  else
+    ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
+    isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" .
+    mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
+    pyright --threads 0 .
+    flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" .
+    ruff check --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
     bandit --exclude=build --recursive --skip B101 .
   fi
 fi
