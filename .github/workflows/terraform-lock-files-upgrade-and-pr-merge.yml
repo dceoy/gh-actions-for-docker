@@ -57,7 +57,7 @@ on:
         required: false
         type: boolean
         description: Whether to merge the pull request
-        default: false
+        default: true
       runs-on:
         required: false
         type: string
@@ -92,6 +92,7 @@ jobs:
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
       trivy-exit-code: ${{ inputs.trivy-exit-code }}
       trivy-config: ${{ inputs.trivy-config }}
+      terraform-validate: false
       runs-on: ${{ inputs.runs-on }}
   merge-pull-request:
     if: >

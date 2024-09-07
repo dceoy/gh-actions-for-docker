@@ -57,11 +57,11 @@ jobs:
       - name: Upgrade Terraform lock files
         env:
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
-          UPDATED_FILES_TXT: /tmp/updated_files.${{ github.run_id }}.txt
+          TERRAFORM_INIT: terraform init -backend=false -upgrade -reconfigure && rm -rf .terraform
         run: |
           if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
-              | jq -r 'to_entries[] | "cp \(.value) \(.key) && cd \(.key) && terraform init -upgrade -reconfigure -backend=false && rm -rf $(basename \(.value)) .terraform"' \
+              | jq -r "to_entries[] | \"cp \\(.value) \\(.key) && cd \\(.key) && ${TERRAFORM_INIT} && rm -f \$(basename \\(.value))\"" \
               | xargs -I{} -t bash -c '{}'
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
               | jq -r 'keys[]' \
@@ -69,26 +69,50 @@ jobs:
               | jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
           elif [[ -n '${{ inputs.terragrunt-working-directories }}' ]]; then
+            updated_files_txt="$(mktemp)"
             echo '${{ inputs.terragrunt-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
-              > "${UPDATED_FILES_TXT}"
-            xargs dirname < "${UPDATED_FILES_TXT}" \
+              > "${updated_files_txt}"
+            xargs dirname < "${updated_files_txt}" \
               | xargs realpath \
               | xargs -I{} -t bash -c \
-                "cd \"{}/../../../modules/\$(basename {})\" && terraform init -upgrade -reconfigure -backend=false && mv ${TERRAFORM_LOCK_FILE} {} && rm -rf .terraform"
-            jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${UPDATED_FILES_TXT}" \
+                "cd \"{}/../../../modules/\$(basename {})\" && ${TERRAFORM_INIT} && mv ${TERRAFORM_LOCK_FILE} {}"
+            jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${updated_files_txt}" \
               | tee -a "${GITHUB_ENV}"
-            rm -f "${UPDATED_FILES_TXT}"
+            rm -f "${updated_files_txt}"
           else
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
-              | xargs -I{} -t bash -c 'terraform -chdir={} init -backend=false -upgrade -reconfigure'
+              | xargs -I{} -t bash -c "cd {} && ${TERRAFORM_INIT}"
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
               | jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' \
               | tee -a "${GITHUB_ENV}"
+          fi
+      - name: Validate the code using terraform validate
+        env:
+          TERRAFORM_LOCK_FILE: .terraform.lock.hcl
+          TERRAFORM_VALIDATE: terraform init -backend=false && terraform validate && rm -rf .terraform
+        run: |
+          if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
+            echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
+              | jq -r 'values[]' \
+              | xargs dirname \
+              | sort -u \
+              | xargs -I{} -t bash -c "cd {} && ${TERRAFORM_VALIDATE}"
+          elif [[ -n '${{ inputs.terragrunt-working-directories }}' ]]; then
+            echo '${{ inputs.terragrunt-working-directories }}' \
+              | tr ' ' '\n' \
+              | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
+              | sort -u \
+              | xargs dirname \
+              | xargs -I{} -t bash -c "cd \"{}/../../../modules/\$(basename {})\" && ${TERRAFORM_VALIDATE}"
+          else
+            echo '${{ inputs.terraform-working-directories }}' \
+              | tr ' ' '\n' \
+              | xargs -I{} -t bash -c "cd {} && ${TERRAFORM_VALIDATE}"
           fi
       - name: Commit and push the changes
         if: (! inputs.create-pr)

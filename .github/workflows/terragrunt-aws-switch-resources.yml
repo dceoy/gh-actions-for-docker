@@ -118,19 +118,20 @@ jobs:
           if (! ${{ inputs.start }}) && ${{ inputs.terminate }}; then
             terragrunt destroy --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
           else
+            ec2_instance_ids_txt="$(mktemp)"
             {
               terragrunt output --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" \
                 | grep -e '_ec2_instance_id = ' \
                 | grep -oe 'i-[0-9a-z]\+' \
                 || :
-            } | tee /tmp/ec2_instance_ids.txt
-            if [[ -s /tmp/ec2_instance_ids.txt ]]; then
+            } | tee "${ec2_instance_ids_txt}"
+            if [[ -s "${ec2_instance_ids_txt}" ]]; then
               if ${{ inputs.start }}; then
                 cmd='start-instances'
               else
                 cmd='stop-instances'
               fi
-              xargs -t aws ec2 "${cmd}" --instance-ids < /tmp/ec2_instance_ids.txt
+              xargs -t aws ec2 "${cmd}" --instance-ids < "${ec2_instance_ids_txt}"
             elif ${{ inputs.start }}; then
               terragrunt apply --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
             fi
