@@ -22,7 +22,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: null
+        default: --output-format=github
       mypy-options:
         required: false
         type: string

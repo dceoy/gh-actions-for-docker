@@ -91,8 +91,11 @@ Reusable workflows
   - [terraform-lint-and-scan.yml](.github/workflows/terraform-lint-and-scan.yml)
     - Lint and security scan for Terraform
 
+  - [terraform-lock-files-upgrade-and-pr-merge.yml](.github/workflows/terraform-lock-files-upgrade-and-pr-merge.yml)
+    - Upgrade of Terraform lock files and pull request merge
+
   - [terraform-lock-files-upgrade.yml](.github/workflows/terraform-lock-files-upgrade.yml)
-    - Upgrade for Terraform lock files
+    - Upgrade of Terraform lock files
 
   - [terragrunt-aws-switch-resources.yml](.github/workflows/terragrunt-aws-switch-resources.yml)
     - Switcher to apply or destroy AWS resources using Terragrunt

@@ -1,5 +1,5 @@
 ---
-name: Upgrade for Terraform lock files
+name: Upgrade of Terraform lock files
 on:
   workflow_call:
     inputs:
