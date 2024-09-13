@@ -22,7 +22,7 @@ elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
   bandit .
 else
   ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
-  isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" .
+  isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" --profile=black .
   mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
   pyright --threads 0 .
   flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" .
