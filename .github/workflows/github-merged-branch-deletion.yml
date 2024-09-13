@@ -1,0 +1,35 @@
+---
+name: Deletion of merged branches on GitHub
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  workflow_call:
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  delete-merged-branch:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Retrieve the merge commit OID
+        id: retrieve-merge-commit-oid
+        run: >
+          gh pr view "${PR_NUMBER}" --json mergeCommit --jq .mergeCommit.oid
+          | xargs -I{} echo 'merge_commit_oid={}'
+          | tee -a "${GITHUB_OUTPUT}"
+      - name: Delete the merged branch
+        if: steps.retrieve-merge-commit-oid.outputs.merge_commit_oid != null
+        run: >
+          gh pr view "${PR_NUMBER}" --json headRefName --jq .headRefName
+          | xargs -I{} -t gh api -X DELETE
+          'repos/${{ github.repository }}/git/refs/heads/{}'

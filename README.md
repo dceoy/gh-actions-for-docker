@@ -43,6 +43,9 @@ Reusable workflows
   - [github-codeql-analysis.yml](.github/workflows/github-codeql-analysis.yml)
     - GitHub CodeQL Analysis
 
+  - [github-merged-branch-deletion.yml](.github/workflows/github-merged-branch-deletion.yml)
+    - Deletion of merged branches on GitHub
+
   - [github-open-pr-aggregate.yml](.github/workflows/github-open-pr-aggregate.yml)
     - Aggregate open pull requests
 
