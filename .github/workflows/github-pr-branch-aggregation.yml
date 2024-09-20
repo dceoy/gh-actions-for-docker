@@ -12,7 +12,11 @@ on:
         required: false
         type: boolean
         description: Delete the merged branches
-        default: true
+        default: false
+    outputs:
+      merged-pr-branches-json:
+        description: JSON array of the merged branches
+        value: ${{ jobs.list-pr-branches.outputs.pr_branches_json }}
 permissions:
   contents: write
 defaults:
