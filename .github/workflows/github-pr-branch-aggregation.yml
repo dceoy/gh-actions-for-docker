@@ -1,0 +1,72 @@
+---
+name: Aggregation of open pull request branches
+on:
+  workflow_call:
+    inputs:
+      pr-branch-prefix:
+        required: false
+        type: string
+        description: Prefix of the branches to merge (e.g., dependabot/terraform/)
+        default: null
+      delete-merged-branch:
+        required: false
+        type: boolean
+        description: Delete the merged branches
+        default: true
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+    working-directory: .
+jobs:
+  list-pr-branches:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_BRANCH_PREFIX: ${{ inputs.pr-branch-prefix }}
+      HEAD_REF: ${{ github.head_ref }}
+    outputs:
+      pr_branches_json: ${{ steps.list-open-prs.outputs.pr_branches_json }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: List open pull request branches
+        id: list-open-prs
+        run: |
+          gh pr list --state open --json headRefName \
+            --jq ".[].headRefName | select(. | startswith(\"${PR_BRANCH_PREFIX}\"))" \
+            | tac \
+            | jq -rRs "split(\"\\n\")[:-1] | .-[\"${HEAD_REF}\"] | \"pr_branches_json=\\(.)\"" \
+            | tee -a "${GITHUB_OUTPUT}"
+  merge-pr-branches:
+    if: needs.list-pr-branches.outputs.pr_branches_json != '[]'
+    needs:
+      - list-pr-branches
+    runs-on: ubuntu-latest
+    env:
+      PR_BRANCHES_JSON: ${{ needs.list-pr-branches.outputs.pr_branches_json }}
+      HEAD_REF: ${{ github.head_ref }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch the remote branches
+        run: |
+          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -t git fetch origin
+      - name: Configure the Git user
+        run: |
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+      - name: Merge the branches
+        run: |
+          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -I{} -t git merge --no-edit origin/{}
+      - name: Push the changes
+        run: |
+          git push origin "HEAD:${HEAD_REF}"
+      - name: Delete the merged branches
+        if: inputs.delete-merged-branch
+        run: |
+          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -t git push origin --delete

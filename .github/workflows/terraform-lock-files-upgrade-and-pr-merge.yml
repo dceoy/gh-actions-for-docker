@@ -23,6 +23,16 @@ on:
         type: string
         description: Terraform version to use
         default: latest
+      merged-pr-branch-prefix:
+        required: false
+        type: string
+        description: Prefix of the branches to merge (e.g., dependabot/terraform/)
+        default: null
+      delete-merged-branch:
+        required: false
+        type: boolean
+        description: Delete the merged branches
+        default: true
       search-path-for-lint-and-scan:
         required: false
         type: string
@@ -71,7 +81,18 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
+  pr-branch-merge:
+    if: >
+      inputs.merged-pr-branch-prefix != null && github.event_name == 'pull_request'
+    uses: ./.github/workflows/github-pr-branch-aggregation.yml
+    with:
+      pr-branch-prefix: ${{ inputs.merged-pr-branch-prefix }}
+      delete-merged-branch: ${{ inputs.delete-merged-branch }}
   terraform-lock-files-upgrade:
+    if: >
+      (! (failure() || cancelled()))
+    needs:
+      - pr-branch-merge
     uses: ./.github/workflows/terraform-lock-files-upgrade.yml
     with:
       terraform-working-directories: ${{ inputs.terraform-working-directories }}

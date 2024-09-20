@@ -46,8 +46,8 @@ Reusable workflows
   - [github-merged-branch-deletion.yml](.github/workflows/github-merged-branch-deletion.yml)
     - Deletion of merged branches on GitHub
 
-  - [github-open-pr-aggregate.yml](.github/workflows/github-open-pr-aggregate.yml)
-    - Aggregate open pull requests
+  - [github-pr-branch-aggregation.yml](.github/workflows/github-pr-branch-aggregation.yml)
+    - Aggregation of open pull request branches
 
   - [github-release.yml](.github/workflows/github-release.yml)
     - Release on GitHub
