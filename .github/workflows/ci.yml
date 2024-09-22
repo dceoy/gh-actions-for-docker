@@ -112,3 +112,38 @@ jobs:
     uses: ./.github/workflows/dependabot-auto-merge.yml
     with:
       unconditional: true
+  update-readme-md:
+    if: >
+      github.event_name == 'push'
+      || github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'format')
+    permissions:
+      contents: write
+      pull-requests: write
+    defaults:
+      run:
+        shell: bash -euo pipefail {0}
+        working-directory: .
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install packages
+        run: |
+          pip install -U --no-cache-dir poetry
+          poetry -C ./src install --no-interaction --without dev
+      - name: Update README.md
+        run: |
+          poetry -C ./src run python ./src/build_readme_md.py
+      - name: Commit and push the changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: ./README.md
+          message: Update README.md
+          push: true
