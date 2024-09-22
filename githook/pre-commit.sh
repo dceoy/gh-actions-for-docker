@@ -13,7 +13,7 @@ if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
     poetry -C "${PACKAGE_DIRECTORY}" run pyright .
     poetry -C "${PACKAGE_DIRECTORY}" run flake8 .
     poetry -C "${PACKAGE_DIRECTORY}" run ruff check .
-    poetry -C "${PACKAGE_DIRECTORY}" run bandit .
+    poetry -C "${PACKAGE_DIRECTORY}" run bandit --recursive --configfile="${PACKAGE_DIRECTORY}/pyproject.toml" .
   elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
     ruff format .
     isort .
@@ -21,12 +21,12 @@ if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
     pyright .
     flake8 .
     ruff check .
-    bandit .
+    bandit --recursive --configfile="${PACKAGE_DIRECTORY}/pyproject.toml" .
   else
     ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
     isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" --profile=black .
     mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
-    pyright --threads 0 .
+    pyright --threads=0 .
     flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" .
     ruff check --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
     bandit --exclude=build --recursive --skip B101 .

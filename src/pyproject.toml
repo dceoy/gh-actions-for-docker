@@ -49,7 +49,9 @@ strict_concatenate = true
 exclude = ["build"]
 
 [tool.pyright]
+typeCheckingMode = "strict"
 exclude = ["build"]
+threads = 0
 
 [tool.bandit]
 recursive = true
