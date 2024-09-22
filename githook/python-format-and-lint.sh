@@ -25,7 +25,7 @@ else
   isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" --profile=black .
   mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
   pyright --threads 0 .
-  flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" .
+  flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" --ignore=B008,W503 .
   ruff check --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
   bandit --exclude=build --recursive .
 fi
