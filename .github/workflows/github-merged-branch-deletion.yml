@@ -7,17 +7,24 @@ on:
     types:
       - closed
   workflow_call:
+    inputs:
+      pull-request-number:
+        required: false
+        type: string
+        description: The pull request number to delete the branch for
+        default: null
 defaults:
   run:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
   delete-merged-branch:
-    if: github.event.pull_request.merged
+    if: >
+      inputs.pull-request-number != null || github.event.pull_request.merged
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ inputs.pull-request-number || github.event.pull_request.number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,9 +34,19 @@ jobs:
           gh pr view "${PR_NUMBER}" --json mergeCommit --jq .mergeCommit.oid
           | xargs -I{} echo 'merge_commit_oid={}'
           | tee -a "${GITHUB_OUTPUT}"
-      - name: Delete the merged branch
+      - name: Retrieve the head ref name
         if: steps.retrieve-merge-commit-oid.outputs.merge_commit_oid != null
         run: >
           gh pr view "${PR_NUMBER}" --json headRefName --jq .headRefName
-          | xargs -I{} -t gh api -X DELETE
-          'repos/${{ github.repository }}/git/refs/heads/{}'
+          | xargs -I{} echo 'HEAD_REF_ENDPOINT=repos/${{ github.repository }}/git/refs/heads/{}'
+          | tee -a "${GITHUB_ENV}"
+      - name: Check if the head ref branch exists
+        if: env.HEAD_REF_ENDPOINT != ''
+        id: check-if-head-ref-exists
+        continue-on-error: true
+        run: >
+          gh api "${HEAD_REF_ENDPOINT}"
+      - name: Delete the merged branch
+        if: steps.check-if-head-ref-exists.outcome == 'success'
+        run: >
+          gh api -X DELETE "${HEAD_REF_ENDPOINT}"
