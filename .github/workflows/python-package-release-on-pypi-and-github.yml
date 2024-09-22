@@ -13,6 +13,11 @@ on:
         type: boolean
         description: Create GitHub and PyPI releases
         default: true
+      publish-to-testpypi-before-pypi:
+        required: false
+        type: boolean
+        description: Publish to TestPyPI before PyPI
+        default: false
       python-version:
         required: false
         type: string
@@ -81,7 +86,9 @@ jobs:
   publish-to-testpypi:
     name: Publish the Python 🐍 distribution 📦 to TestPyPI
     if: >
-      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
+      startsWith(github.ref, 'refs/tags/')
+      && inputs.create-releases
+      && inputs.publish-to-testpypi-before-pypi
     needs:
       - build
     runs-on: ${{ inputs.runs-on }}
@@ -103,7 +110,9 @@ jobs:
   github-release:
     name: Sign the Python 🐍 distribution 📦 with Sigstore and upload them to GitHub Release
     if: >
-      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
+      startsWith(github.ref, 'refs/tags/')
+      && inputs.create-releases
+      && (! (failure() || cancelled()))
     needs:
       - build
       - publish-to-testpypi
@@ -133,7 +142,6 @@ jobs:
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
           inputs: >-
-            ./dist/*.tar.gz
             ./dist/*.whl
       - name: Create GitHub Release
         env:
@@ -151,7 +159,9 @@ jobs:
   publish-to-pypi:
     name: Publish the Python 🐍 distribution 📦 to PyPI
     if: >
-      startsWith(github.ref, 'refs/tags/') && inputs.create-releases
+      startsWith(github.ref, 'refs/tags/')
+      && inputs.create-releases
+      && (! (failure() || cancelled()))
     needs:
       - build
       - publish-to-testpypi
