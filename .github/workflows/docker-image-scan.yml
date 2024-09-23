@@ -21,7 +21,7 @@ on:
         required: false
         type: string
         description: Registry username
-        default: ${{ github.actor }}
+        default: ${{ github.repository_owner }}
       trivy-scanners:
         required: false
         type: string

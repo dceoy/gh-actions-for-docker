@@ -32,7 +32,7 @@ on:
         required: false
         type: string
         description: Registry username
-        default: ${{ github.actor }}
+        default: ${{ github.repository_owner }}
       runs-on:
         required: false
         type: string

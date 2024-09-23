@@ -78,7 +78,7 @@ jobs:
     uses: ./.github/workflows/docker-build-and-push.yml
     with:
       registry: ghcr.io
-      registry-user: ${{ github.actor }}
+      registry-user: ${{ github.repository_owner }}
       image-name: ${{ github.repository }}
       platforms: linux/amd64,linux/arm64
       context: ./src
