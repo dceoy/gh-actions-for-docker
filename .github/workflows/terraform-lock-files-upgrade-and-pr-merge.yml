@@ -123,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PR_URL: ${{ github.event.pull_request.html_url }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Approve the pull request
         run: >

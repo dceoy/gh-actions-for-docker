@@ -19,17 +19,21 @@ jobs:
   dependabot-auto-merge:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Enable auto-merge for Dependabot PRs
+      - name: Approve the pull request
         if: inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: approve-pr
         run: |
           gh pr review --approve "${PR_URL}"
+      - name: Merge the pull request
+        if: steps.approve-pr.outcome == 'success'
+        run: >
           gh pr merge --auto --merge --delete-branch "${PR_URL}"
