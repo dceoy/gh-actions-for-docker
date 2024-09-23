@@ -22,7 +22,7 @@ on:
         required: false
         type: string
         description: Additional options for docker buildx build other than --tag, --target, --file, and --load
-        default: null
+        default: --cache-to type=gha,mode=max --cache-from type=gha
       scan-before-build:
         required: false
         type: boolean
