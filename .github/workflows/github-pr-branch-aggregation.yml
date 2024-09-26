@@ -17,6 +17,10 @@ on:
       merged-pr-branches-json:
         description: JSON array of the merged branches
         value: ${{ jobs.list-pr-branches.outputs.pr_branches_json }}
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
 defaults:
@@ -28,7 +32,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       PR_BRANCH_PREFIX: ${{ inputs.pr-branch-prefix }}
       HEAD_REF: ${{ github.head_ref }}
     outputs:

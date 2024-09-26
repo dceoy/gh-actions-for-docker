@@ -53,6 +53,10 @@ on:
         type: string
         description: GitHub Actions runner to use
         default: ubuntu-latest
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
   pull-requests: write
@@ -119,7 +123,7 @@ jobs:
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.parameters.outputs.COMMIT_MESSAGE }}
           title: ${{ steps.parameters.outputs.COMMIT_MESSAGE }}
           branch: ${{ steps.parameters.outputs.PR_BRANCH }}

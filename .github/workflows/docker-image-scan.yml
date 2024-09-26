@@ -56,6 +56,9 @@ on:
       DOCKER_TOKEN:
         required: false
         description: Registry token
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
 defaults:
@@ -102,4 +105,4 @@ jobs:
           trivy-config: ${{ inputs.trivy-config }}
           format: github
           output: dependency-results.${{ strategy.job-index }}.sbom.json
-          github-pat: ${{ secrets.GITHUB_TOKEN }}
+          github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}

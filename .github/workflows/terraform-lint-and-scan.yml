@@ -48,6 +48,10 @@ on:
         type: string
         description: GitHub Actions runner to use
         default: ubuntu-latest
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
 defaults:
@@ -105,7 +109,7 @@ jobs:
           trivy-config: ${{ inputs.trivy-config }}
           format: github
           output: dependency-results.sbom.json
-          github-pat: ${{ secrets.GITHUB_TOKEN }}
+          github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Validate the code using terraform validate
         if: inputs.terraform-validate
         run: |

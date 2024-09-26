@@ -8,6 +8,10 @@ on:
         type: boolean
         description: Whether to unconditionally auto-merge the PR
         default: false
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
   pull-requests: write
@@ -21,13 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PR_URL: ${{ github.event.pull_request.html_url }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
       - name: Approve the pull request
         if: inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
         id: approve-pr

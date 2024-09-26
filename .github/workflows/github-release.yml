@@ -13,6 +13,10 @@ on:
         type: boolean
         description: Create a new tag if the input tag does not exist
         default: false
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
   workflow_dispatch:
     inputs:
       tag-name:
@@ -35,7 +39,7 @@ jobs:
   github-release:
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - name: Validate the tag consistency
         if: >

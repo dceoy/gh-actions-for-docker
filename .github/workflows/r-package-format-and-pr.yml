@@ -33,6 +33,10 @@ on:
         type: boolean
         description: Run lint before creating a pull request
         default: true
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
   pull-requests: write
@@ -44,7 +48,6 @@ jobs:
   format-and-pr:
     runs-on: ${{ inputs.runs-on }}
     env:
-      GITHUB_PAT: ${{ secrets.PAT }}
       R_LIBS_USER: ${{ inputs.r-libs-user }}
       LINTR_ERROR_ON_LINT: true
     steps:
@@ -98,7 +101,7 @@ jobs:
       - name: Detect changed files and create a pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.parameters.outputs.COMMIT_MESSAGE }}
           title: ${{ steps.parameters.outputs.COMMIT_MESSAGE }}
           branch: ${{ steps.parameters.outputs.PR_BRANCH }}

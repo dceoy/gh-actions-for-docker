@@ -33,6 +33,10 @@ on:
         type: string
         description: GitHub Actions runner to use
         default: ubuntu-latest
+    secrets:
+      GH_TOKEN:
+        required: false
+        description: GitHub token
 permissions:
   contents: write
   pull-requests: write
@@ -125,7 +129,7 @@ jobs:
         if: inputs.create-pr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: ${{ env.COMMIT_MESSAGE }}
           title: ${{ env.COMMIT_MESSAGE }}
           branch: autopr/${{ github.head_ref || github.ref_name }}
