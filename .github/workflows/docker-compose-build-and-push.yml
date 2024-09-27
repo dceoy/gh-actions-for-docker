@@ -26,8 +26,8 @@ on:
       registry:
         required: false
         type: string
-        description: The registry to push the image to
-        default: docker.io  # { docker.io, ghcr.io }
+        description: Registry to push the image to (e.g., ghcr.io, docker.io)
+        default: ghcr.io
       registry-user:
         required: false
         type: string

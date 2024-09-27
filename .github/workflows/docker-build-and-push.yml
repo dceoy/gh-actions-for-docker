@@ -6,8 +6,8 @@ on:
       registry:
         required: false
         type: string
-        description: Registry to push the image to
-        default: docker.io  # { docker.io, ghcr.io }
+        description: Image registry to login (e.g., ghcr.io, docker.io)
+        default: ghcr.io
       registry-user:
         required: false
         type: string
