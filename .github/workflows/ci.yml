@@ -99,8 +99,12 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'release'
     uses: ./.github/workflows/github-release.yml
+    permissions:
+      contents: write
     with:
       create-new-tag: false
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   dependabot-auto-merge:
     if: >
       github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
@@ -110,8 +114,13 @@ jobs:
       - toml-lint
       - docker-lint-and-scan
     uses: ./.github/workflows/dependabot-auto-merge.yml
+    permissions:
+      contents: write
+      pull-requests: write
     with:
       unconditional: true
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   update-readme-md:
     if: >
       github.event_name == 'push'
