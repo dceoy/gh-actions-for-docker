@@ -19,6 +19,7 @@ on:
         description: GitHub token
 permissions:
   contents: write
+  pull-requests: read
 defaults:
   run:
     shell: bash -euo pipefail {0}
