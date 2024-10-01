@@ -45,7 +45,9 @@ def _detect_reusable_workflow(
 
 
 def _render_md(
-    workflows: list[dict[str, str]], template_md: Path, output_md: Path,
+    workflows: list[dict[str, str]],
+    template_md: Path,
+    output_md: Path,
 ) -> None:
     _print_log(f"Render a Markdown file: {output_md}")
     new_text = (

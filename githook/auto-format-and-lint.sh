@@ -5,33 +5,26 @@ set -euox pipefail
 MAX_DEPTH=7
 
 PYTHON_LINE_LENGTH=88
+RUFF_LINT_SELECT='F,E,W,C90,I,N,D,UP,S,B,A,COM,C4,PT,Q,SIM,ARG,ERA,PD,PLC,PLE,PLW,TRY,FLY,NPY,PERF,FURB,RUF'
+RUFF_LINT_IGNORE='D100,D103,S101,B008,A002,A004,PLC2701,TRY003'
 N_PYTHON_FILES=$(find . -maxdepth "${MAX_DEPTH}" -type f -name '*.py' | wc -l)
 if [[ "${N_PYTHON_FILES}" -gt 0 ]]; then
   PACKAGE_DIRECTORY="$(find . -maxdepth "${MAX_DEPTH}" -type f -name 'pyproject.toml' -exec dirname {} \; | head -n 1)"
   if [[ -n "${PACKAGE_DIRECTORY}" ]] && [[ -f "${PACKAGE_DIRECTORY}/poetry.lock" ]]; then
     poetry -C "${PACKAGE_DIRECTORY}" run ruff format .
-    poetry -C "${PACKAGE_DIRECTORY}" run isort .
+    poetry -C "${PACKAGE_DIRECTORY}" run ruff check --fix .
     poetry -C "${PACKAGE_DIRECTORY}" run mypy .
     poetry -C "${PACKAGE_DIRECTORY}" run pyright .
-    poetry -C "${PACKAGE_DIRECTORY}" run flake8 .
-    poetry -C "${PACKAGE_DIRECTORY}" run ruff check .
-    poetry -C "${PACKAGE_DIRECTORY}" run bandit --recursive --configfile="${PACKAGE_DIRECTORY}/pyproject.toml" .
   elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
     ruff format .
-    isort .
+    ruff check --fix --select="${RUFF_LINT_SELECT}" --ignore="${RUFF_LINT_IGNORE}" .
     mypy .
     pyright .
-    flake8 .
-    ruff check .
-    bandit --recursive --configfile="${PACKAGE_DIRECTORY}/pyproject.toml" .
   else
     ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
-    isort --skip-glob=build "--line-length=${PYTHON_LINE_LENGTH}" --profile=black .
+    ruff check --fix --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" --select="${RUFF_LINT_SELECT}" --ignore="${RUFF_LINT_IGNORE}" .
     mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
     pyright --threads=0 .
-    flake8 --exclude=build "--max-line-length=${PYTHON_LINE_LENGTH}" --ignore=B008,W503 .
-    ruff check --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
-    bandit --exclude=build --recursive --skip B101 .
   fi
 fi
 
