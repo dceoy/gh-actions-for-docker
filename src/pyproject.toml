@@ -12,31 +12,97 @@ Jinja2 = "^3.1.4"
 PyYAML = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
-autopep8 = "^2.3.1"
-bandit = "^1.7.10"
-flake8 = "^7.1.1"
-flake8-bugbear = "^24.8.19"
-flake8-isort = "^6.1.1"
-pep8-naming = "^0.14.1"
 ruff = "^0.6.8"
-isort = "^5.13.2"
 mypy = "^1.11.2"
-flake8-pyproject = "^1.2.3"
 types-pyyaml = "^6.0.12.20240917"
 pyright = "^1.1.382"
-
-[tool.flake8]
-max-line-length = 88
-exclude = ["build"]
 
 [tool.ruff]
 line-length = 88
 exclude = ["build"]
+preview = true
 
-[tool.isort]
-line_length = 88
-profile = "black"
-skip = ["build"]
+[tool.ruff.lint]
+select = [
+  "F",      # Pyflakes (F)
+  "E",      # pycodestyle error (E)
+  "W",      # pycodestyle warning (W)
+  "C90",    # mccabe (C90)
+  "I",      # isort (I)
+  "N",      # pep8-naming (N)
+  "D",      # pydocstyle (D)
+  "UP",     # pyupgrade (UP)
+  "S",      # flake8-bandit (S)
+  "B",      # flake8-bugbear (B)
+  "A",      # flake8-builtins (A)
+  "COM",    # flake8-commas (COM)
+  "C4",     # flake8-comprehensions (C4)
+  "PT",     # flake8-pytest-style (PT)
+  "Q",      # flake8-quotes (Q)
+  "SIM",    # flake8-simplify (SIM)
+  "ARG",    # flake8-unused-arguments (ARG)
+  "ERA",    # eradicate (ERA)
+  "PD",     # pandas-vet (PD)
+  "PLC",    # Pylint convention (PLC)
+  "PLE",    # Pylint error (PLE)
+  # "PLR",    # Pylint refactor (PLR)
+  "PLW",    # Pylint warning (PLW)
+  "TRY",    # tryceratops (TRY)
+  "FLY",    # flynt (FLY)
+  "NPY",    # NumPy-specific rules (NPY)
+  "PERF",   # Perflint (PERF)
+  "FURB",   # refurb (FURB)
+  "RUF"     # Ruff-specific rules (RUF)
+]
+extend-select = [
+  "YTT",    # flake8-2020 (YTT)
+  # "ANN",    # flake8-annotations (ANN)
+  "ASYNC",  # flake8-async (ASYNC)
+  "BLE",    # flake8-blind-except (BLE)
+  # "FBT",    # flake8-boolean-trap (FBT)
+  # "CPY",    # flake8-copyright (CPY)
+  "DTZ",    # flake8-datetimez (DTZ)
+  "T10",    # flake8-debugger (T10)
+  "DJ",     # flake8-django (DJ)
+  # "EM",     # flake8-errmsg (EM)
+  # "EXE",    # flake8-executable (EXE)
+  # "FA",     # flake8-future-annotations (FA)
+  "ISC",    # flake8-implicit-str-concat (ISC)
+  "ICN",    # flake8-import-conventions (ICN)
+  "LOG",    # flake8-logging (LOG)
+  "G",      # flake8-logging-format (G)
+  "INP",    # flake8-no-pep420 (INP)
+  "PIE",    # flake8-pie (PIE)
+  # "T20",    # flake8-print (T20)
+  "PYI",    # flake8-pyi (PYI)
+  "RSE",    # flake8-raise (RSE)
+  # "RET",    # flake8-return (RET)
+  "SLF",    # flake8-self (SLF)
+  "SLOT",   # flake8-slots (SLOT)
+  "TID",    # flake8-tidy-imports (TID)
+  # "TCH",    # flake8-type-checking (TCH)
+  "INT",    # flake8-gettext (INT)
+  "PTH",    # flake8-use-pathlib (PTH)
+  "TD",     # flake8-todos (TD)
+  "FIX",    # flake8-fixme (FIX)
+  "PGH",    # pygrep-hooks (PGH)
+  "FAST",   # FastAPI (FAST)
+  "AIR",    # Airflow (AIR)
+  "DOC"     # pydoclint (DOC)
+]
+ignore = [
+  "B008",     # function-call-in-default-argument
+  "A002",     # builtin-argument-shadowing
+  "A004",     # builtin-import-shadowing
+  "PIE790",   # unnecessary-placeholder
+  "TRY003",   # raise-vanilla-args
+]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
 install_types = true
@@ -50,12 +116,9 @@ exclude = ["build"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportPrivateUsage = false
 exclude = ["build"]
 threads = 0
-
-[tool.bandit]
-recursive = true
-exclude_dirs = ["build"]
 
 [build-system]
 requires = ["poetry-core"]
