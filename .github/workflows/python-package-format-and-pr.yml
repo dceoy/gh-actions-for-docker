@@ -13,36 +13,36 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      black-options:
-        required: false
-        type: string
-        description: Additional options to pass to black
-        default: --line-length=88
       ruff-format-options:
         required: false
         type: string
         description: Additional options to pass to ruff format
         default: --line-length=88
-      isort-options:
-        required: false
-        type: string
-        description: Additional options to pass to isort
-        default: --skip-glob=build --profile=black
       ruff-check-options:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: null
+        default: --fix --output-format=github
       use-black:
         required: false
         type: boolean
         description: Use black to format the code
         default: false
-      pypi-packages:
+      black-options:
         required: false
         type: string
-        description: Additional packages to install
-        default: null
+        description: Additional options to pass to black
+        default: --line-length=88
+      use-isort:
+        required: false
+        type: boolean
+        description: Use isort to sort import definitions
+        default: false
+      isort-options:
+        required: false
+        type: string
+        description: Additional options to pass to isort
+        default: --skip-glob=build --profile=black
       lint-before-pr:
         required: false
         type: boolean
@@ -83,37 +83,44 @@ jobs:
             pip install -U --no-cache-dir poetry
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
-              isort ${{ inputs.use-black && 'black' || 'ruff' }} ${{ inputs.pypi-packages }}
+              ${{ inputs.use-black && 'black' || 'ruff' }} \
+              ${{ inputs.use-isort && 'isort' || '' }}
             poetry install --no-interaction
-            echo "PATH=$(poetry env info --path)/bin:${PATH}" | tee -a "${GITHUB_ENV}"
+            echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              isort ${{ inputs.use-black && 'black' || 'ruff' }} ${{ inputs.pypi-packages }}
+              ${{ inputs.use-black && 'black' || 'ruff' }} \
+              ${{ inputs.use-isort && 'isort' || '' }}
+            echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
           fi
-      - name: Format the code using black
-        if: inputs.use-black
-        run: >
-          black ${{ inputs.black-options }} ${{ inputs.package-path }}
       - name: Format the code using ruff
         if: (! inputs.use-black)
         run: >
-          ruff format ${{ inputs.ruff-format-options }} ${{ inputs.package-path }}
-      - name: Sort Python import definitions using isort
+          ${{ env.EXECUTOR }} ruff format ${{ inputs.ruff-format-options }} ${{ inputs.package-path }}
+      - name: Format the code using black
+        if: inputs.use-black
         run: >
-          isort ${{ inputs.isort-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} black ${{ inputs.black-options }} ${{ inputs.package-path }}
+      - name: Sort Python import definitions using isort
+        if: inputs.use-isort
+        run: >
+          ${{ env.EXECUTOR }} isort ${{ inputs.isort-options }} ${{ inputs.package-path }}
       - name: Lint the code using ruff
         if: inputs.lint-before-pr
         run: >
-          ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
       - name: Create output parameters
         id: parameters
         env:
           PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
           if [[ ${{ inputs.use-black }} == true ]]; then
-            formatters='ruff and isort'
+            formatters='ruff'
           else
-            formatters='black and isort'
+            formatters='black'
+          fi
+          if [[ ${{ inputs.use-isort }} == true ]]; then
+            formatters="${formatters} and isort"
           fi
           {
             echo "COMMIT_MESSAGE=Reformat Python code using ${formatters}"

@@ -34,20 +34,14 @@ select = [
   "UP",     # pyupgrade (UP)
   "S",      # flake8-bandit (S)
   "B",      # flake8-bugbear (B)
-  "A",      # flake8-builtins (A)
-  "COM",    # flake8-commas (COM)
   "C4",     # flake8-comprehensions (C4)
-  "PT",     # flake8-pytest-style (PT)
-  "Q",      # flake8-quotes (Q)
   "SIM",    # flake8-simplify (SIM)
   "ARG",    # flake8-unused-arguments (ARG)
-  "ERA",    # eradicate (ERA)
   "PD",     # pandas-vet (PD)
   "PLC",    # Pylint convention (PLC)
   "PLE",    # Pylint error (PLE)
-  # "PLR",    # Pylint refactor (PLR)
+  "PLR",    # Pylint refactor (PLR)
   "PLW",    # Pylint warning (PLW)
-  "TRY",    # tryceratops (TRY)
   "FLY",    # flynt (FLY)
   "NPY",    # NumPy-specific rules (NPY)
   "PERF",   # Perflint (PERF)
@@ -60,6 +54,8 @@ extend-select = [
   "ASYNC",  # flake8-async (ASYNC)
   "BLE",    # flake8-blind-except (BLE)
   # "FBT",    # flake8-boolean-trap (FBT)
+  "A",      # flake8-builtins (A)
+  "COM",    # flake8-commas (COM)
   # "CPY",    # flake8-copyright (CPY)
   "DTZ",    # flake8-datetimez (DTZ)
   "T10",    # flake8-debugger (T10)
@@ -75,6 +71,8 @@ extend-select = [
   "PIE",    # flake8-pie (PIE)
   # "T20",    # flake8-print (T20)
   "PYI",    # flake8-pyi (PYI)
+  "PT",     # flake8-pytest-style (PT)
+  "Q",      # flake8-quotes (Q)
   "RSE",    # flake8-raise (RSE)
   # "RET",    # flake8-return (RET)
   "SLF",    # flake8-self (SLF)
@@ -85,7 +83,9 @@ extend-select = [
   "PTH",    # flake8-use-pathlib (PTH)
   "TD",     # flake8-todos (TD)
   "FIX",    # flake8-fixme (FIX)
+  "ERA",    # eradicate (ERA)
   "PGH",    # pygrep-hooks (PGH)
+  "TRY",    # tryceratops (TRY)
   "FAST",   # FastAPI (FAST)
   "AIR",    # Airflow (AIR)
   "DOC"     # pydoclint (DOC)
@@ -99,9 +99,6 @@ ignore = [
   "PIE790",   # unnecessary-placeholder
   "TRY003",   # raise-vanilla-args
 ]
-
-[tool.ruff.lint.isort]
-force-single-line = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -123,5 +120,5 @@ exclude = ["build"]
 threads = 0
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

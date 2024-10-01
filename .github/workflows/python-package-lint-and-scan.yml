@@ -13,36 +13,51 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      flake8-options:
-        required: false
-        type: string
-        description: Additional options to pass to flake8
-        default: null
       ruff-check-options:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: --output-format=github
-      mypy-options:
-        required: false
-        type: string
-        description: Additional options to pass to mypy
-        default: --install-types --non-interactive
+        default: --output-format=github --select=F,E,W,C90,I,N,UP,S,B,C4,SIM,ARG,PD,PLC,PLE,PLW,FLY,NPY,PERF,FURB,RUF --ignore=B008,S101,PLC2701
       pyright-options:
         required: false
         type: string
         description: Additional options to pass to pyright
         default: --threads=0
+      use-mypy:
+        required: false
+        type: boolean
+        description: Use mypy to check types
+        default: true
+      mypy-options:
+        required: false
+        type: string
+        description: Additional options to pass to mypy
+        default: --install-types --non-interactive
+      use-flake8:
+        required: false
+        type: boolean
+        description: Use flake8 to lint the code
+        default: false
+      flake8-options:
+        required: false
+        type: string
+        description: Additional options to pass to flake8
+        default: null
+      use-bandit:
+        required: false
+        type: boolean
+        description: Use bandit to find security issues
+        default: false
       bandit-options:
         required: false
         type: string
         description: Additional options to pass to bandit
         default: --recursive
-      pypi-packages:
+      additional-python-packages:
         required: false
         type: string
-        description: Additional packages to install
-        default: flake8-bugbear flake8-isort flake8-pyproject pep8-naming
+        description: Additional Python packages to install
+        default: null
       runs-on:
         required: false
         type: string
@@ -69,29 +84,37 @@ jobs:
             pip install -U --no-cache-dir poetry
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
-              flake8 ruff mypy pyright bandit ${{ inputs.pypi-packages }}
+              ruff pyright \
+              ${{ inputs.use-flake8 && 'flake8' || '' }} \
+              ${{ inputs.use-bandit && 'bandit' || '' }} \
+              ${{ inputs.use-mypy && 'mypy' || '' }} \
+              ${{ inputs.additional-python-packages || '' }}
             poetry install --no-interaction --no-root
             echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              flake8 ruff mypy pyright bandit ${{ inputs.pypi-packages }}
-            if [[ -f requirements.txt ]]; then
-              pip install -U --no-cache-dir -r requirements.txt
-            fi
+              ruff pyright \
+              ${{ inputs.use-flake8 && 'flake8' || '' }} \
+              ${{ inputs.use-bandit && 'bandit' || '' }} \
+              ${{ inputs.use-mypy && 'mypy' || '' }} \
+              ${{ inputs.additional-python-packages || '' }}
             echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
           fi
-      - name: Lint the code using flake8
-        run: >
-          ${{ env.EXECUTOR }} flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
       - name: Lint the code using ruff
         run: >
           ${{ env.EXECUTOR }} ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
+      - name: Lint the code using flake8
+        if: inputs.use-flake8
+        run: >
+          ${{ env.EXECUTOR }} flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
+      - name: Find security issues using bandit
+        if: inputs.use-bandit
+        run: >
+          ${{ env.EXECUTOR }} bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}
       - name: Check types using mypy
+        if: inputs.use-mypy
         run: >
           ${{ env.EXECUTOR }} mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
       - name: Check types using pyright
         run: >
           ${{ env.EXECUTOR }} pyright ${{ inputs.pyright-options }} ${{ inputs.package-path }}
-      - name: Find security issues using bandit
-        run: >
-          ${{ env.EXECUTOR }} bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}
