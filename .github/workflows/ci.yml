@@ -34,8 +34,6 @@ jobs:
     with:
       package-path: ./src
       python-version: 3.x
-      mypy-options: --install-types --non-interactive
-      bandit-options: --recursive
   github-actions-lint:
     if: >
       github.event_name == 'push'
