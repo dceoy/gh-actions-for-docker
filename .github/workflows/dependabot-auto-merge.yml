@@ -40,4 +40,4 @@ jobs:
       - name: Merge the pull request
         if: steps.approve-pr.outcome == 'success'
         run: >
-          gh pr merge --auto --merge --delete-branch "${PR_URL}"
+          gh pr merge --merge --delete-branch "${PR_URL}"

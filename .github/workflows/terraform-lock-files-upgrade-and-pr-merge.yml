@@ -28,11 +28,6 @@ on:
         type: string
         description: Prefix of the branches to merge (e.g., dependabot/terraform/)
         default: null
-      delete-merged-branch:
-        required: false
-        type: boolean
-        description: Delete the merged branches
-        default: true
       search-path-for-lint-and-scan:
         required: false
         type: string
@@ -134,24 +129,4 @@ jobs:
           gh pr review --approve "${PR_URL}"
       - name: Merge the pull request
         run: >
-          gh pr merge --auto --merge --delete-branch "${PR_URL}"
-  delete-merged-branches:
-    if: >
-      inputs.delete-merged-branch
-      && github.event_name == 'pull_request'
-      && needs.pr-branch-merge.outputs.merged-pr-branches-json != '[]'
-    needs:
-      - pr-branch-merge
-      - merge-pull-request
-    runs-on: ubuntu-latest
-    env:
-      PR_BRANCHES_JSON: ${{ needs.pr-branch-merge.outputs.merged-pr-branches-json }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Delete the merged branches
-        run: |
-          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" \
-            | xargs -t git ls-remote --heads origin \
-            | cut -f2 \
-            | xargs -t git push origin --delete
+          gh pr merge --merge --delete-branch "${PR_URL}"
