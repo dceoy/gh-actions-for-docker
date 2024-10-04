@@ -23,6 +23,11 @@ on:
         type: string
         description: Terraform version to use
         default: latest
+      terragrunt-version:
+        required: false
+        type: string
+        description: Terragrunt version to use
+        default: latest
       create-pr:
         required: false
         type: boolean
@@ -58,10 +63,26 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ inputs.terraform-version }}
+      - name: Install Terragrunt
+        if: inputs.terragrunt-working-directories != null
+        env:
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
+        run: |
+          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
+          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
+            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
+              | jq -r ".assets[] | select(.name | endswith(\"${arch_type}\")) | .browser_download_url" \
+              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
+          else
+            curl -sSL -o /usr/local/bin/terragrunt \
+              "https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
+          fi
+          chmod +x /usr/local/bin/terragrunt
       - name: Upgrade Terraform lock files
         env:
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
           TERRAFORM_INIT: terraform init -backend=false -upgrade -reconfigure && rm -rf .terraform
+          TERRAGRUNT_INIT: terragrunt init --terragrunt-non-interactive -backend=false -upgrade -reconfigure && rm -rf .terragrunt-cache
         run: |
           if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
@@ -79,9 +100,8 @@ jobs:
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
               > "${updated_files_txt}"
             xargs dirname < "${updated_files_txt}" \
-              | xargs realpath \
               | xargs -I{} -t bash -c \
-                "cd \"{}/../../../modules/\$(basename {})\" && ${TERRAFORM_INIT} && mv ${TERRAFORM_LOCK_FILE} {}"
+                "cd {} && mv terragrunt.hcl _ && grep -A 10 '^terraform {' _ > terragrunt.hcl && ${TERRAGRUNT_INIT} && mv _ terragrunt.hcl"
             jq -rRs 'split("\n")[:-1] | "UPDATED_FILES_JSON=\(.)"' "${updated_files_txt}" \
               | tee -a "${GITHUB_ENV}"
             rm -f "${updated_files_txt}"
@@ -99,6 +119,7 @@ jobs:
         env:
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
           TERRAFORM_VALIDATE: terraform init -backend=false && terraform validate && rm -rf .terraform
+          TERRAGRUNT_VALIDATE: terragrunt init --terragrunt-non-interactive -backend=false && terragrunt validate && rm -rf .terragrunt-cache
         run: |
           if [[ -n '${{ inputs.terraform-working-directory-to-version-tf-json }}' ]]; then
             echo '${{ inputs.terraform-working-directory-to-version-tf-json }}' \
@@ -110,9 +131,9 @@ jobs:
             echo '${{ inputs.terragrunt-working-directories }}' \
               | tr ' ' '\n' \
               | xargs -I{} find {} -type f -name "${TERRAFORM_LOCK_FILE}" \
-              | sort -u \
               | xargs dirname \
-              | xargs -I{} -t bash -c "cd \"{}/../../../modules/\$(basename {})\" && ${TERRAFORM_VALIDATE}"
+              | xargs -I{} -t bash -c \
+                "cd {} && mv terragrunt.hcl _ && grep -A 10 '^terraform {' _ > terragrunt.hcl && ${TERRAGRUNT_VALIDATE} && mv _ terragrunt.hcl"
           else
             echo '${{ inputs.terraform-working-directories }}' \
               | tr ' ' '\n' \
