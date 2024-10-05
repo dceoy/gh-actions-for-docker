@@ -8,6 +8,11 @@ on:
         type: boolean
         description: Whether to unconditionally auto-merge the PR
         default: false
+      auto-merge-after-requirements:
+        required: false
+        type: boolean
+        description: Whether to merge the PR automatically only after necessary requirements are met
+        default: false
     secrets:
       GH_TOKEN:
         required: false
@@ -35,9 +40,9 @@ jobs:
       - name: Approve the pull request
         if: inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
         id: approve-pr
-        run: |
+        run: >
           gh pr review --approve "${PR_URL}"
       - name: Merge the pull request
         if: steps.approve-pr.outcome == 'success'
         run: >
-          gh pr merge --merge --delete-branch "${PR_URL}"
+          gh pr merge --merge --delete-branch ${{ inputs.auto-merge-after-requirements && '--auto' || '' }} "${PR_URL}"
