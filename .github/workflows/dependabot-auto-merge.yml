@@ -36,7 +36,7 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ env.GH_TOKEN }}
       - name: Approve the pull request
         if: inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
         id: approve-pr
