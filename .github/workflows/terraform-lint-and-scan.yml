@@ -99,7 +99,7 @@ jobs:
         run: |
           tflint --recursive --filter ${{ inputs.search-path }}
       - name: Run Trivy vulnerability scanner in IaC mode
-        uses: aquasecurity/trivy-action@0.25.0
+        uses: aquasecurity/trivy-action@0.26.0
         with:
           scan-type: config
           scan-ref: ${{ inputs.search-path }}
