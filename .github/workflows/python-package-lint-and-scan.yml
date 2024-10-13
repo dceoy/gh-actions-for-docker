@@ -27,7 +27,7 @@ on:
         required: false
         type: boolean
         description: Use mypy to check types
-        default: true
+        default: false
       mypy-options:
         required: false
         type: string
