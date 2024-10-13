@@ -9,16 +9,13 @@ PACKAGE_DIRECTORY="$(find . -type f -name 'pyproject.toml' -exec dirname {} \; |
 if [[ -n "${PACKAGE_DIRECTORY}" ]] && [[ -f "${PACKAGE_DIRECTORY}/poetry.lock" ]]; then
   poetry -C "${PACKAGE_DIRECTORY}" run ruff format .
   poetry -C "${PACKAGE_DIRECTORY}" run ruff check --fix .
-  poetry -C "${PACKAGE_DIRECTORY}" run mypy .
   poetry -C "${PACKAGE_DIRECTORY}" run pyright .
 elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
   ruff format .
   ruff check --fix --extend-select="${RUFF_LINT_EXTEND_SELECT}" --ignore="${RUFF_LINT_IGNORE}" .
-  mypy .
   pyright .
 else
   ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
   ruff check --fix --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" --extend-select="${RUFF_LINT_EXTEND_SELECT}" --ignore="${RUFF_LINT_IGNORE}" .
-  mypy --exclude=build --install-types --non-interactive --ignore-missing-imports --strict --strict-equality --strict-optional .
   pyright --threads 0 .
 fi
