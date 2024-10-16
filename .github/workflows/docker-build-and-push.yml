@@ -176,7 +176,7 @@ jobs:
           cosign-release: v2.2.2
       - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
         if: inputs.scan-before-build
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: filesystem
           scan-ref: ${{ inputs.context }}
@@ -243,7 +243,7 @@ jobs:
           retention-days: ${{ inputs.image-artifact-retention-days }}
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: image
           image-ref: ${{ fromJson(steps.meta.outputs.json).tags[0] }}
