@@ -28,6 +28,11 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
+      target:
+        required: false
+        type: string
+        description: Target stage to build
+        default: null
       build-args:
         required: false
         type: string
@@ -207,6 +212,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.context }}
           file: ${{ inputs.file }}
+          target: ${{ inputs.target }}
           build-args: ${{ inputs.build-args }}
           platforms: ${{ inputs.platforms }}
           push: ${{ inputs.push }}
