@@ -85,6 +85,7 @@ jobs:
       image-artifact-name: docker-image
     secrets:
       DOCKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
   github-codeql-analysis:
     if: >
       github.event_name == 'push'
