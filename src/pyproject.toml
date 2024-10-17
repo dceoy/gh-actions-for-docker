@@ -46,9 +46,7 @@ select = [
   "NPY",    # NumPy-specific rules (NPY)
   "PERF",   # Perflint (PERF)
   "FURB",   # refurb (FURB)
-  "RUF"     # Ruff-specific rules (RUF)
-]
-extend-select = [
+  "RUF",    # Ruff-specific rules (RUF)
   "YTT",    # flake8-2020 (YTT)
   # "ANN",    # flake8-annotations (ANN)
   "ASYNC",  # flake8-async (ASYNC)
