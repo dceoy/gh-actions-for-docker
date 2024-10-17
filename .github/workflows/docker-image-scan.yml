@@ -47,6 +47,26 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      dockle-format:
+        required: false
+        type: string
+        description: Output format for Dockle
+        default: list
+      dockle-exit-code:
+        required: false
+        type: number
+        description: Exit code for Dockle
+        default: 0
+      dockle-exit-level:
+        required: false
+        type: string
+        description: Exit level for Dockle
+        default: warn
+      dockle-ignore:
+        required: false
+        type: string
+        description: Comma-separated code list to ignore for Dockle
+        default: null
       runs-on:
         required: false
         type: string
@@ -106,3 +126,11 @@ jobs:
           format: github
           output: dependency-results.${{ strategy.job-index }}.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Run Dockle
+        uses: goodwithtech/dockle-action@0.1.0
+        with:
+          image: ${{ matrix.image-ref }}
+          format: ${{ inputs.dockle-format }}
+          exit-code: ${{ inputs.dockle-exit-code }}
+          exit-level: ${{ inputs.dockle-exit-level }}
+          ignore: ${{ inputs.dockle-ignore }}

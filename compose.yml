@@ -5,7 +5,7 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
-    image: build-readme-md:latest
+    image: dceoy/build-readme-md:latest
     network_mode: none
     volumes:
       - ${PWD}:/wd
