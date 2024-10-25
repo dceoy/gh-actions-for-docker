@@ -57,7 +57,7 @@ on:
         required: false
         type: string
         description: Timeout for the Trivy scan
-        default: 60m0s
+        default: 5m0s
       image-artifact-name:
         required: false
         type: string

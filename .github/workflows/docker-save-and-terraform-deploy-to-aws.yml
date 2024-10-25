@@ -57,7 +57,7 @@ on:
         required: false
         type: string
         description: Timeout for the Trivy scan
-        default: 60m0s
+        default: 5m0s
       docker-image-names-to-pull:
         required: false
         type: string

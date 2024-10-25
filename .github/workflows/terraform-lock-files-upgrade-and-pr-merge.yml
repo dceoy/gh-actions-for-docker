@@ -67,7 +67,7 @@ on:
         required: false
         type: string
         description: Timeout for the Trivy scan
-        default: 60m0s
+        default: 5m0s
       merge-pr:
         required: false
         type: boolean

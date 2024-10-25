@@ -102,7 +102,7 @@ on:
         required: false
         type: string
         description: Timeout for the Trivy scan
-        default: 60m0s
+        default: 5m0s
       docker-metadata-action-tags:
         required: false
         type: string
