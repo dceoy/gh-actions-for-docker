@@ -53,6 +53,11 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      trivy-timeout:
+        required: false
+        type: string
+        description: Timeout for the Trivy scan
+        default: 60m0s
       docker-image-names-to-pull:
         required: false
         type: string
@@ -206,11 +211,12 @@ jobs:
       file: ${{ inputs.dockerfile }}
       docker-buildx-build-options: ${{ inputs.docker-buildx-build-options }}
       scan-before-build: ${{ inputs.scan-before-build }}
-      trivy-exit-code: ${{ inputs.trivy-exit-code }}
-      trivy-severity: ${{ inputs.trivy-severity }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-exit-code: ${{ inputs.trivy-exit-code }}
       trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
       runs-on: ${{ inputs.runs-on }}

@@ -18,6 +18,11 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      trivy-scanners:
+        required: false
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
       trivy-severity:
         required: false
         type: string
@@ -38,6 +43,11 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      trivy-timeout:
+        required: false
+        type: string
+        description: Timeout for the Trivy scan
+        default: 60m0s
       terraform-validate:
         required: false
         type: boolean
@@ -103,13 +113,18 @@ jobs:
         with:
           scan-type: config
           scan-ref: ${{ inputs.search-path }}
+          scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           exit-code: ${{ inputs.trivy-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
+          timeout: ${{ inputs.trivy-timeout }}
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Validate the code using terraform validate
         if: inputs.terraform-validate
         run: |

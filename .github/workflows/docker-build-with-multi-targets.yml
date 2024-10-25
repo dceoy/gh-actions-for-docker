@@ -53,6 +53,11 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      trivy-timeout:
+        required: false
+        type: string
+        description: Timeout for the Trivy scan
+        default: 60m0s
       image-artifact-name:
         required: false
         type: string
@@ -107,9 +112,13 @@ jobs:
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           exit-code: ${{ inputs.trivy-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
+          timeout: ${{ inputs.trivy-timeout }}
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Build images for multiple target stages
         env:
           IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
