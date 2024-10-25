@@ -13,7 +13,6 @@ PyYAML = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.7.1"
-mypy = "^1.12.1"
 types-pyyaml = "^6.0.12.20240917"
 pyright = "^1.1.385"
 
@@ -104,16 +103,6 @@ convention = "google"
 [tool.ruff.lint.pylint]
 max-args = 10
 max-locals = 10
-
-[tool.mypy]
-install_types = true
-non_interactive = true
-ignore_missing_imports = true
-strict = true
-strict_optional = true
-strict_equality = true
-strict_concatenate = true
-exclude = ["build"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
