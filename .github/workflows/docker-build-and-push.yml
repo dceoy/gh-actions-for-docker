@@ -98,6 +98,11 @@ on:
         type: string
         description: Path to a Trivy config file
         default: null
+      trivy-timeout:
+        required: false
+        type: string
+        description: Timeout for the Trivy scan
+        default: 60m0s
       docker-metadata-action-tags:
         required: false
         type: string
@@ -190,9 +195,13 @@ jobs:
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           exit-code: ${{ inputs.trivy-filesystem-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
+          timeout: ${{ inputs.trivy-timeout }}
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Extract metadata from Git reference and GitHub events
         id: meta
         uses: docker/metadata-action@v5.5.1
@@ -258,6 +267,10 @@ jobs:
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
           exit-code: ${{ inputs.trivy-image-exit-code }}
           trivy-config: ${{ inputs.trivy-config }}
+          timeout: ${{ inputs.trivy-timeout }}
           format: github
           output: dependency-results.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
