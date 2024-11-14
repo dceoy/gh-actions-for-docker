@@ -17,7 +17,7 @@ on:
         required: false
         type: string
         description: Additional options to pass to ruff check
-        default: --output-format=github --select=F,E,W,C90,I,N,UP,S,B,C4,SIM,ARG,PD,PLC,PLE,PLW,FLY,NPY,PERF,FURB,RUF --ignore=B008,S101,PLC2701
+        default: null
       pyright-options:
         required: false
         type: string

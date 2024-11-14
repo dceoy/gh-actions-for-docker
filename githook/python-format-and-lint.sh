@@ -12,7 +12,7 @@ if [[ -n "${PACKAGE_DIRECTORY}" ]] && [[ -f "${PACKAGE_DIRECTORY}/poetry.lock" ]
   poetry -C "${PACKAGE_DIRECTORY}" run pyright .
 elif [[ -n "${PACKAGE_DIRECTORY}" ]]; then
   ruff format .
-  ruff check --fix --extend-select="${RUFF_LINT_EXTEND_SELECT}" --ignore="${RUFF_LINT_IGNORE}" .
+  ruff check --fix .
   pyright .
 else
   ruff format --exclude=build "--line-length=${PYTHON_LINE_LENGTH}" .
