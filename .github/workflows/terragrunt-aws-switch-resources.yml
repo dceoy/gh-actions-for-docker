@@ -98,8 +98,10 @@ jobs:
       - name: Read AWS profile environment file
         if: inputs.aws-profile-env-file != null
         id: aws-profile-env
+        env:
+          AWS_PROFILE_ENV_FILE: ${{ inputs.aws-profile-env-file }}
         run: |
-          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
+          cat "${AWS_PROFILE_ENV_FILE}" >> "${GITHUB_OUTPUT}"
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -114,6 +116,7 @@ jobs:
         if: inputs.terragrunt-target-ec2-directory != null
         env:
           TERRAGRUNT_TARGET_EC2_DIRECTORY: ${{ inputs.terragrunt-target-ec2-directory }}
+          AWS_EC2_COMMAND: ${{ inputs.start && 'start-instances' || 'stop-instances' }}
         run: |
           if (! ${{ inputs.start }}) && ${{ inputs.terminate }}; then
             terragrunt destroy --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
@@ -126,24 +129,16 @@ jobs:
                 || :
             } | tee "${ec2_instance_ids_txt}"
             if [[ -s "${ec2_instance_ids_txt}" ]]; then
-              if ${{ inputs.start }}; then
-                cmd='start-instances'
-              else
-                cmd='stop-instances'
-              fi
-              xargs -t aws ec2 "${cmd}" --instance-ids < "${ec2_instance_ids_txt}"
+              xargs -t aws ec2 "${AWS_EC2_COMMAND}" --instance-ids < "${ec2_instance_ids_txt}"
             elif ${{ inputs.start }}; then
               terragrunt apply --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
             fi
           fi
       - name: Create or destroy target resources
         if: inputs.terragrunt-target-resource-directories != null
+        env:
+          TERRAGRUNT_COMMAND: ${{ inputs.start && 'apply' || 'destroy' }}
+          TERRAGRUNT_TARGET_RESOURCE_DIRECTORIES: ${{ inputs.terragrunt-target-resource-directories }}
         run: |
-          if ${{ inputs.start }}; then
-            cmd='apply'
-          else
-            cmd='destroy'
-          fi
-          cat <<EOF | xargs -I{} -t terragrunt "${cmd}" --terragrunt-working-dir='{}' -auto-approve
-          ${{ inputs.terragrunt-target-resource-directories }}
-          EOF
+          echo "${TERRAGRUNT_TARGET_RESOURCE_DIRECTORIES}" \
+            | xargs -I{} -t terragrunt "${TERRAGRUNT_COMMAND}" --terragrunt-working-dir='{}' -auto-approve

@@ -70,8 +70,10 @@ jobs:
       - name: Read AWS profile environment file
         if: inputs.aws-profile-env-file != null
         id: aws-profile-env
+        env:
+          AWS_PROFILE_ENV_FILE: ${{ inputs.aws-profile-env-file }}
         run: |
-          cat ${{ inputs.aws-profile-env-file }} >> "${GITHUB_OUTPUT}"
+          cat "${AWS_PROFILE_ENV_FILE}" >> "${GITHUB_OUTPUT}"
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
