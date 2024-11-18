@@ -113,5 +113,6 @@ jobs:
           output: dependency-results.${{ strategy.job-index }}.sbom.json
           github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
         env:
+          TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
