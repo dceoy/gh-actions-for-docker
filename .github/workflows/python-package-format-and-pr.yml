@@ -115,9 +115,9 @@ jobs:
           PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
           if [[ ${{ inputs.use-black }} == true ]]; then
-            formatters='ruff'
-          else
             formatters='black'
+          else
+            formatters='ruff'
           fi
           if [[ ${{ inputs.use-isort }} == true ]]; then
             formatters="${formatters} and isort"
