@@ -98,16 +98,18 @@ jobs:
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Lint the code using terraform fmt
+        working-directory: ${{ inputs.search-path }}
         run: |
-          terraform fmt -recursive -check ${{ inputs.search-path }}
+          terraform fmt -recursive -check .
       - name: Check terragrunt HCL
         if: inputs.terragrunt-version != null
+        working-directory: ${{ inputs.search-path }}
         run: >
           terragrunt hclfmt --terragrunt-check --terragrunt-diff
-          --terragrunt-working-dir ${{ inputs.search-path }}
       - name: Lint the code using tflint
+        working-directory: ${{ inputs.search-path }}
         run: |
-          tflint --recursive --filter ${{ inputs.search-path }}
+          tflint --recursive --filter .
       - name: Run Trivy vulnerability scanner in IaC mode
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -128,8 +130,9 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Validate the code using terraform validate
         if: inputs.terraform-validate
+        working-directory: ${{ inputs.search-path }}
         run: |
-          find ${{ inputs.search-path }} -type f -name '*.tf' -exec dirname {} \; \
+          find . -type f -name '*.tf' -exec dirname {} \; \
             | sort -u \
             | grep -ve '/\.' \
             | xargs -I{} -t bash -c \

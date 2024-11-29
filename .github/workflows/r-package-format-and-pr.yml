@@ -71,23 +71,31 @@ jobs:
       - name: Format the code using styler::style_pkg()
         if: inputs.format-package
         shell: Rscript {0}
+        env:
+          PACKAGE_PATH: ${{ inputs.package-path }}
         run: |
-          styler::style_pkg(path = '${{ inputs.package-path }}')
+          styler::style_pkg(path = Sys.getenv('PACKAGE_PATH'))
       - name: Format the code using styler::style_dir()
         if: (! inputs.format-package)
         shell: Rscript {0}
+        env:
+          PACKAGE_PATH: ${{ inputs.package-path }}
         run: |
-          styler::style_dir(path = '${{ inputs.package-path }}')
+          styler::style_dir(path = Sys.getenv('PACKAGE_PATH'))
       - name: Lint the code using lintr::lint_package()
         if: inputs.lint-before-pr && inputs.format-package
         shell: Rscript {0}
+        env:
+          PACKAGE_PATH: ${{ inputs.package-path }}
         run: |
-          lintr::lint_package(path = '${{ inputs.package-path }}')
+          lintr::lint_package(path = Sys.getenv('PACKAGE_PATH'))
       - name: Lint the code using lintr::lint_dir()
         if: (! (inputs.lint-before-pr && inputs.format-package))
         shell: Rscript {0}
+        env:
+          PACKAGE_PATH: ${{ inputs.package-path }}
         run: |
-          lintr::lint_dir(path = '${{ inputs.package-path }}')
+          lintr::lint_dir(path = Sys.getenv('PACKAGE_PATH'))
       - name: Create output parameters
         id: parameters
         env:

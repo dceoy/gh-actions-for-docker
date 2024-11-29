@@ -45,9 +45,10 @@ jobs:
         if: >
           startsWith(github.ref, 'refs/tags/') && inputs.tag-name != null
           && github.ref_name != inputs.tag-name
+        env:
+          TAG_NAME: ${{ inputs.tag-name }}
         run: >
-          echo 'Invalid input tag: ${{ inputs.tag-name }} != ${{ github.ref_name }}'
-          && exit 1
+          echo "Invalid input tag: ${TAG_NAME} != ${{ github.ref_name }}" && exit 1
       - name: Validate the input tag
         if: >
           (! startsWith(github.ref, 'refs/tags/')) && inputs.tag-name == null
@@ -60,11 +61,11 @@ jobs:
           startsWith(github.ref, 'refs/tags/')
           || ((! startsWith(github.ref, 'refs/tags/')) && ! inputs.create-new-tag)
         run: >
-          gh release create '${{ github.ref_name }}'
-          --repo '${{ github.repository }}' --generate-notes --verify-tag
+          gh release create '${{ github.ref_name }}' --repo '${{ github.repository }}' --generate-notes --verify-tag
       - name: Create the GitHub release for the tag
         if: >
           (! startsWith(github.ref, 'refs/tags/')) && inputs.create-new-tag
+        env:
+          TAG_NAME: ${{ inputs.tag-name }}
         run: >
-          gh release create '${{ inputs.tag-name }}'
-          --repo '${{ github.repository }}' --generate-notes
+          gh release create "${TAG_NAME}" --repo '${{ github.repository }}' --generate-notes

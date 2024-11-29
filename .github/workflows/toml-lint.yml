@@ -29,9 +29,9 @@ jobs:
           go-version: ${{ inputs.go-version }}
           cache: false
       - name: Install tomll
-        run: |
+        run: >
           go install github.com/pelletier/go-toml/v2/cmd/tomll@latest
       - name: Execute tomllint
+        working-directory: ${{ inputs.search-path }}
         run: >
-          find ${{ inputs.search-path }} -type f -name '*.toml' -print0
-          | xargs -0 -t tomll
+          find . -type f -name '*.toml' -print0 | xargs -0 -t tomll

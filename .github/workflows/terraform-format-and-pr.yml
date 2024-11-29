@@ -69,22 +69,29 @@ jobs:
           fi
           chmod +x /usr/local/bin/terragrunt
       - name: Format the code using terraform fmt
+        env:
+          SEARCH_PATH: ${{ inputs.search-path }}
         run: |
-          terraform fmt -recursive ${{ inputs.search-path }}
+          terraform fmt -recursive "${SEARCH_PATH}"
       - name: Format the code using terragrunt hclfmt
         if: inputs.terragrunt-version != null
+        env:
+          SEARCH_PATH: ${{ inputs.search-path }}
         run: |
-          terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir='${{ inputs.search-path }}'
+          terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir="${SEARCH_PATH}"
       - name: Lint the code using TFLint
         if: inputs.lint-before-pr
+        env:
+          SEARCH_PATH: ${{ inputs.search-path }}
         run: |
-          tflint --recursive --filter ${{ inputs.search-path }}
+          tflint --recursive --filter "${SEARCH_PATH}"
       - name: Create output parameters
         id: parameters
         env:
           PR_BASE: ${{ github.head_ref || github.ref_name }}
+          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
         run: |
-          if [[ -n '${{ inputs.terragrunt-version }}' ]]; then
+          if [[ -n "${TERRAGRUNT_VERSION}" ]]; then
             formatters='terraform and terragrunt'
           else
             formatters='terraform'

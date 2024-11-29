@@ -8,12 +8,6 @@ on:
         type: string
         description: Path to search for files
         default: .
-      yamllint-options:
-        required: false
-        type: string
-        description: Options to pass to yamllint
-        default: >
-          -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
       python-version:
         required: false
         type: string
@@ -34,9 +28,11 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install yamllint
-        run: |
+        run: >
           pip install -U --no-cache-dir yamllint
       - name: Execute yamllint
+        working-directory: ${{ inputs.search-path }}
         run: >
-          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
-          | xargs -0 -t yamllint ${{ inputs.yamllint-options }}
+          find . -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
+          | xargs -0 -t yamllint
+          --config-data '{"extends": "relaxed", "rules": {"line-length": "disable"}}'

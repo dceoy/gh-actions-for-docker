@@ -8,21 +8,11 @@ on:
         type: boolean
         description: Push images to the registry
         default: true
-      docker-compose-options:
+      compose-directory:
         required: false
         type: string
-        description: Additional options to pass to docker-compose
-        default: null
-      docker-compose-build-options:
-        required: false
-        type: string
-        description: Additional options to pass to docker-compose build
-        default: --parallel --pull
-      docker-compose-push-options:
-        required: false
-        type: string
-        description: Additional options to pass to docker-compose push
-        default: null
+        description: Path to the directory containing the Docker Compose file
+        default: .
       registry:
         required: false
         type: string
@@ -70,11 +60,11 @@ jobs:
           username: ${{ inputs.registry-user }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build images
+        working-directory: ${{ inputs.compose-directory }}
         run: >
-          docker-compose ${{ inputs.docker-compose-options }}
-          build ${{ inputs.docker-compose-build-options }}
+          docker compose build --parallel --pull
       - name: Push the images
         if: inputs.push
+        working-directory: ${{ inputs.compose-directory }}
         run: >
-          docker-compose ${{ inputs.docker-compose-options }}
-          push ${{ inputs.docker-compose-push-options }}
+          docker compose push

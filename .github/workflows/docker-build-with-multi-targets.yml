@@ -18,11 +18,6 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
-      docker-buildx-build-options:
-        required: false
-        type: string
-        description: Additional options for docker buildx build other than --tag, --target, --file, and --load
-        default: --cache-to type=gha,mode=max --cache-from type=gha
       scan-before-build:
         required: false
         type: boolean
@@ -123,18 +118,21 @@ jobs:
       - name: Build images for multiple target stages
         env:
           IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
-        run: |
-          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}" \
-            | jq -r 'to_entries[] | "--tag \(.key) --target \(.value)"' \
-            | xargs -I{} -t bash -c \
-              'docker buildx build --load {} --file ${{ inputs.file }} ${{ inputs.docker-buildx-build-options }} ${{ inputs.context }}'
+          FILE: ${{ inputs.file }}
+          CONTEXT: ${{ inputs.context }}
+          DOCKER_BUILDX_BUILD_OPTIONS: --cache-to type=gha,mode=max --cache-from type=gha
+        run: >
+          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}"
+          | jq -r 'to_entries[] | "--tag \(.key) --target \(.value)"'
+          | xargs -I{} -t bash -c
+          "docker buildx build --load {} --file ${FILE} ${DOCKER_BUILDX_BUILD_OPTIONS} ${CONTEXT}"
       - name: Save the images as a tarball
         env:
           IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
-        run: |
-          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}" \
-            | jq -r 'keys[]' \
-            | xargs -t docker save -o "${IMAGE_TAR}"
+        run: >
+          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}"
+          | jq -r 'keys[]'
+          | xargs -t docker save -o "${IMAGE_TAR}"
       - name: Upload the image tarball
         uses: actions/upload-artifact@v4
         with:

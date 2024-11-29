@@ -13,46 +13,21 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      ruff-check-options:
-        required: false
-        type: string
-        description: Additional options to pass to ruff check
-        default: null
-      pyright-options:
-        required: false
-        type: string
-        description: Additional options to pass to pyright
-        default: --threads=0
       use-mypy:
         required: false
         type: boolean
         description: Use mypy to check types
         default: false
-      mypy-options:
-        required: false
-        type: string
-        description: Additional options to pass to mypy
-        default: --install-types --non-interactive
       use-flake8:
         required: false
         type: boolean
         description: Use flake8 to lint the code
         default: false
-      flake8-options:
-        required: false
-        type: string
-        description: Additional options to pass to flake8
-        default: null
       use-bandit:
         required: false
         type: boolean
         description: Use bandit to find security issues
         default: false
-      bandit-options:
-        required: false
-        type: string
-        description: Additional options to pass to bandit
-        default: --recursive
       additional-python-packages:
         required: false
         type: string
@@ -78,43 +53,59 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
+        env:
+          POETRY_HOME: /opt/poetry
+          ADDITIONAL_PYTHON_PACKAGES: ${{ inputs.additional-python-packages }}
         working-directory: ${{ inputs.package-path }}
         run: |
           if [[ -f poetry.lock ]]; then
             pip install -U --no-cache-dir poetry
             poetry lock --no-update --no-interaction
             poetry add --group=dev --no-interaction \
-              ruff pyright \
               ${{ inputs.use-flake8 && 'flake8' || '' }} \
               ${{ inputs.use-bandit && 'bandit' || '' }} \
               ${{ inputs.use-mypy && 'mypy' || '' }} \
-              ${{ inputs.additional-python-packages || '' }}
+              ruff pyright
+            for p in $(echo "${ADDITIONAL_PYTHON_PACKAGES}" | tr ' ' '\n'); do
+              if [[ -n "${p}" ]]; then
+                poetry add --group=dev --no-interaction "${p}"
+              fi
+            done
             poetry install --no-interaction --no-root
             echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
             pip install -U --no-cache-dir \
-              ruff pyright \
               ${{ inputs.use-flake8 && 'flake8' || '' }} \
               ${{ inputs.use-bandit && 'bandit' || '' }} \
               ${{ inputs.use-mypy && 'mypy' || '' }} \
-              ${{ inputs.additional-python-packages || '' }}
+              ruff pyright
+            for p in $(echo "${ADDITIONAL_PYTHON_PACKAGES}" | tr ' ' '\n'); do
+              if [[ -n "${p}" ]]; then
+                pip install -U --no-cache-dir "${p}"
+              fi
+            done
             echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
           fi
       - name: Lint the code using ruff
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} ruff check --output-format=github .
       - name: Lint the code using flake8
         if: inputs.use-flake8
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} flake8 ${{ inputs.flake8-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} flake8 .
       - name: Find security issues using bandit
         if: inputs.use-bandit
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} bandit ${{ inputs.bandit-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} bandit --recursive .
       - name: Check types using mypy
         if: inputs.use-mypy
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} mypy ${{ inputs.mypy-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} mypy --install-types --non-interactive .
       - name: Check types using pyright
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} pyright ${{ inputs.pyright-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} pyright --threads=0 .

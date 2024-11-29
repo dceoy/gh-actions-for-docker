@@ -13,36 +13,16 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      ruff-format-options:
-        required: false
-        type: string
-        description: Additional options to pass to ruff format
-        default: --line-length=88
-      ruff-check-options:
-        required: false
-        type: string
-        description: Additional options to pass to ruff check
-        default: --fix --output-format=github
       use-black:
         required: false
         type: boolean
         description: Use black to format the code
         default: false
-      black-options:
-        required: false
-        type: string
-        description: Additional options to pass to black
-        default: --line-length=88
       use-isort:
         required: false
         type: boolean
         description: Use isort to sort import definitions
         default: false
-      isort-options:
-        required: false
-        type: string
-        description: Additional options to pass to isort
-        default: --skip-glob=build --profile=black
       lint-before-pr:
         required: false
         type: boolean
@@ -95,31 +75,37 @@ jobs:
           fi
       - name: Format the code using ruff
         if: (! inputs.use-black)
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} ruff format ${{ inputs.ruff-format-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} ruff format .
       - name: Format the code using black
         if: inputs.use-black
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} black ${{ inputs.black-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} black .
       - name: Sort Python import definitions using isort
         if: inputs.use-isort
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} isort ${{ inputs.isort-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} isort .
       - name: Lint the code using ruff
         if: inputs.lint-before-pr
+        working-directory: ${{ inputs.package-path }}
         run: >
-          ${{ env.EXECUTOR }} ruff check ${{ inputs.ruff-check-options }} ${{ inputs.package-path }}
+          ${{ env.EXECUTOR }} ruff check --fix --output-format=github .
       - name: Create output parameters
         id: parameters
         env:
+          USE_BLACK: ${{ inputs.use-black }}
+          USE_ISORT: ${{ inputs.use-isort }}
           PR_BASE: ${{ github.head_ref || github.ref_name }}
         run: |
-          if [[ ${{ inputs.use-black }} == true ]]; then
+          if ${USE_BLACK}; then
             formatters='black'
           else
             formatters='ruff'
           fi
-          if [[ ${{ inputs.use-isort }} == true ]]; then
+          if ${USE_ISORT}; then
             formatters="${formatters} and isort"
           fi
           {

@@ -8,28 +8,22 @@ on:
         type: string
         description: Path to search for files
         default: .
-      yamllint-options:
-        required: false
-        type: string
-        description: Options to pass to yamllint
-        default: >
-          -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
-      cfn-lint-options:
-        required: false
-        type: string
-        description: Options to pass to cfn-lint
-        default: --template
       python-version:
         required: false
         type: string
         description: Python version to use
         default: 3.x
+      use-yamllint:
+        required: false
+        type: boolean
+        description: Whether to use yamllint
+        default: true
 defaults:
   run:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  lint:
+  cloudformation-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -39,13 +33,16 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install cfn-lint and yamllint
-        run: |
-          pip install -U --no-cache-dir cfn-lint yamllint
-      - name: Execute yamllint
         run: >
-          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
-          | xargs -0 -t yamllint ${{ inputs.yamllint-options }}
+          pip install -U --no-cache-dir cfn-lint
       - name: Execute cfn-lint
+        working-directory: ${{ inputs.search-path }}
         run: >
-          find ${{ inputs.search-path }} -type f \( -name '*.cfn.yml' -o -name '*.cfn.yaml' \) -print0
-          | xargs -0 -t cfn-lint ${{ inputs.cfn-lint-options }}
+          find . -type f \( -name '*.cfn.yml' -o -name '*.cfn.yaml' \) -print0
+          | xargs -0 -t cfn-lint
+  yaml-lint:
+    if: inputs.use-yamllint
+    uses: ./.github/workflows/yaml-lint.yml
+    with:
+      search-path: ${{ inputs.search-path }}
+      python-version: ${{ inputs.python-version }}

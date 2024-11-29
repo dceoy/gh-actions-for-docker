@@ -86,8 +86,10 @@ jobs:
           path: /tmp/
       - name: Load the image tarball
         if: inputs.image-artifact-name != null
-        run: |
-          docker load -i /tmp/${{ inputs.image-artifact-name }}.tar
+        env:
+          IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+        run: >
+          docker load -i "${IMAGE_TAR}"
       - name: Checkout repository
         if: inputs.trivy-config != null
         uses: actions/checkout@v4

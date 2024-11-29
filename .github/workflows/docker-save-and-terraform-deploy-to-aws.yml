@@ -18,11 +18,6 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
-      docker-buildx-build-options:
-        required: false
-        type: string
-        description: Additional options for docker buildx build other than --tag, --target, and --file
-        default: null
       scan-before-build:
         required: false
         type: boolean
@@ -108,36 +103,6 @@ on:
         type: boolean
         description: Create or update infrastructure
         default: false
-      terraform-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform
-        default: null
-      terraform-init-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform init
-        default: null
-      terraform-validate-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform validate
-        default: null
-      terraform-plan-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform plan
-        default: null
-      terraform-apply-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform apply
-        default: null   # -auto-approve
-      terragrunt-options:
-        required: false
-        type: string
-        description: Additional options to pass to terragrunt
-        default: null   # --terragrunt-non-interactive
       terraform-version:
         required: false
         type: string
@@ -209,7 +174,6 @@ jobs:
       image-name-to-target-stage-json: ${{ inputs.docker-image-name-to-target-stage-json }}
       context: ${{ inputs.docker-build-context }}
       file: ${{ inputs.dockerfile }}
-      docker-buildx-build-options: ${{ inputs.docker-buildx-build-options }}
       scan-before-build: ${{ inputs.scan-before-build }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-severity: ${{ inputs.trivy-severity }}
@@ -249,12 +213,6 @@ jobs:
       aws-profile-env-file: ${{ inputs.target-aws-profile-env-file }}
       terraform-or-terragrunt-working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
       apply: ${{ inputs.apply }}
-      terraform-options: ${{ inputs.terraform-apply-options }}
-      terraform-init-options: ${{ inputs.terraform-init-options }}
-      terraform-validate-options: ${{ inputs.terraform-validate-options }}
-      terraform-plan-options: ${{ inputs.terraform-plan-options }}
-      terraform-apply-options: ${{ inputs.terraform-apply-options }}
-      terragrunt-options: ${{ inputs.terragrunt-options }}
       terraform-version: ${{ inputs.terraform-version }}
       terragrunt-version: ${{ inputs.terragrunt-version }}
       use-docker: true

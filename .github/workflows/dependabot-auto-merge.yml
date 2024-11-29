@@ -38,11 +38,18 @@ jobs:
         with:
           github-token: ${{ env.GH_TOKEN }}
       - name: Approve the pull request
-        if: inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        if: >
+          inputs.unconditional || steps.metadata.outputs.update-type == 'version-update:semver-patch'
         id: approve-pr
         run: >
           gh pr review --approve "${PR_URL}"
-      - name: Merge the pull request
-        if: steps.approve-pr.outcome == 'success'
+      - name: Merge the pull request after necessary requirements are met
+        if: >
+          steps.approve-pr.outcome == 'success' && inputs.auto-merge-after-requirements
         run: >
-          gh pr merge --merge --delete-branch ${{ inputs.auto-merge-after-requirements && '--auto' || '' }} "${PR_URL}"
+          gh pr merge --merge --delete-branch --auto "${PR_URL}"
+      - name: Merge the pull request immediately
+        if: >
+          steps.approve-pr.outcome == 'success' && (! inputs.auto-merge-after-requirements)
+        run: >
+          gh pr merge --merge --delete-branch "${PR_URL}"

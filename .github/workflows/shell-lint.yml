@@ -3,16 +3,11 @@ name: Lint for Shell
 on:
   workflow_call:
     inputs:
-      file-paths:
+      search-path:
         required: false
         type: string
-        description: Paths to shell scripts
+        description: Path to search for files
         default: .
-      shellcheck-options:
-        required: false
-        type: string
-        description: Options for shellcheck
-        default: --external-sources
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -28,7 +23,7 @@ jobs:
           sudo apt-get -y update
           sudo apt-get -y install --no-install-recommends --no-install-suggests shellcheck
       - name: Execute shellcheck
+        working-directory: ${{ inputs.search-path }}
         run: >
-          find ${{ inputs.file-paths }} -type f
-          \( -name '*.sh' -o -name '*.bash' -o -name '*.bats' \) -print0
-          | xargs -0 -t shellcheck ${{ inputs.shellcheck-options }}
+          find . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*.bats' \) -print0
+          | xargs -0 -t shellcheck --external-sources

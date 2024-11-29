@@ -28,36 +28,6 @@ on:
         type: boolean
         description: Create or update infrastructure
         default: false
-      terraform-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform
-        default: null
-      terraform-init-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform init
-        default: null
-      terraform-validate-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform validate
-        default: null
-      terraform-plan-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform plan
-        default: null
-      terraform-apply-options:
-        required: false
-        type: string
-        description: Additional options to pass to terraform apply
-        default: null   # -auto-approve
-      terragrunt-options:
-        required: false
-        type: string
-        description: Additional options to pass to terragrunt
-        default: null   # --terragrunt-non-interactive
       terraform-version:
         required: false
         type: string
@@ -185,37 +155,43 @@ jobs:
           role-to-assume: ${{ inputs.aws-iam-role-to-assume || steps.aws-profile-env.outputs.ROLE_ARN || null }}
           aws-region: ${{ inputs.aws-region || steps.aws-profile-env.outputs.REGION || null }}
           role-session-name: github-actions-${{ github.run_id }}
+      - name: Prepare working directories for Terraform and Terragrunt
+        if: inputs.terragrunt-version != null
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
+        run: |
+          terragrunt run-all init
       - name: Prepare working directories for Terraform
+        if: inputs.terragrunt-version == null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all init ${{ inputs.terragrunt-options }} ${{ inputs.terraform-init-options }}
-          else
-            terraform ${{ inputs.terraform-options }} init ${{ inputs.terraform-init-options }}
-          fi
+          terraform init
+      - name: Check whether the configuration of Terraform and Terragrunt is valid
+        if: inputs.terragrunt-version != null
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
+        run: |
+          terragrunt run-all validate
       - name: Check whether the configuration of Terraform is valid
+        if: inputs.terragrunt-version != null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all validate ${{ inputs.terragrunt-options }} ${{ inputs.terraform-validate-options }}
-          else
-            terraform ${{ inputs.terraform-options }} validate ${{ inputs.terraform-validate-options }}
-          fi
+          terraform validate
+      - name: Show changes required by the current configuration of Terraform and Terragrunt
+        if: (! inputs.apply) && inputs.terragrunt-version != null
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
+        run: |
+          terragrunt run-all plan
       - name: Show changes required by the current configuration of Terraform
-        if: (! inputs.apply)
+        if: (! inputs.apply) && inputs.terragrunt-version == null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all plan ${{ inputs.terragrunt-options }} ${{ inputs.terraform-plan-options }}
-          else
-            terraform ${{ inputs.terraform-options }} plan ${{ inputs.terraform-plan-options }}
-          fi
+          terraform plan
+      - name: Create or update infrastructure using Terraform and Terragrunt
+        if: inputs.apply && inputs.terragrunt-version != null
+        working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
+        run: |
+          terragrunt run-all apply --terragrunt-non-interactive
       - name: Create or update infrastructure using Terraform
-        if: inputs.apply
+        if: inputs.apply && inputs.terragrunt-version == null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          if ${{ inputs.terragrunt-version != null }}; then
-            terragrunt run-all apply ${{ inputs.terragrunt-options }} ${{ inputs.terraform-apply-options }}
-          else
-            terraform ${{ inputs.terraform-options }} apply ${{ inputs.terraform-apply-options }}
-          fi
+          terraform apply -auto-approve

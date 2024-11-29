@@ -166,9 +166,6 @@ jobs:
         run: |
           {
           	cat <<-EOF
-          	GITHUB_ACTION_CONFIG.AUTO_DESCRIBE=${{ inputs.auto-describe || 'true' }}
-          	GITHUB_ACTION_CONFIG.AUTO_REVIEW=${{ inputs.auto-review || 'true' }}
-          	GITHUB_ACTION_CONFIG.AUTO_IMPROVE=${{ inputs.auto-improve || 'true' }}
           	PR_DESCRIPTION.EXTRA_INSTRUCTIONS=${{ inputs.pr-description-extra-instructions }}
           	PR_REVIEWER.EXTRA_INSTRUCTIONS=${{ inputs.pr-reviewer-extra-instructions }}
           	PR_CODE_SUGGESTIONS.EXTRA_INSTRUCTIONS=${{ inputs.pr-code-suggestions-extra-instructions }}
@@ -214,3 +211,6 @@ jobs:
         uses: Codium-ai/pr-agent@v0.24
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: ${{ inputs.auto-describe || 'true' }}
+          GITHUB_ACTION_CONFIG.AUTO_REVIEW: ${{ inputs.auto-review || 'true' }}
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: ${{ inputs.auto-improve || 'true' }}

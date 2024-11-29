@@ -13,11 +13,11 @@ on:
         type: string
         description: Directory to scan with Trivy
         default: .
-      hadolint-options:
+      hadolint-failure-threshold:
         required: false
         type: string
-        description: Additional options to pass to hadolint
-        default: --failure-threshold error
+        description: Hadolint failure threshold
+        default: error
       trivy-scanners:
         required: false
         type: string
@@ -70,10 +70,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Lint the code using hadolint
+        env:
+          DOCKERFILE_PATHS: ${{ inputs.dockerfile-paths }}
+          HADOLINT_FAILURE_THRESHOLD: ${{ inputs.hadolint-failure-threshold }}
         run: |
-          for p in $(echo '${{ inputs.dockerfile-paths }}' | tr ' ' '\n'); do
+          for p in $(echo "${DOCKERFILE_PATHS}" | tr ' ' '\n'); do
             docker run --rm -i ghcr.io/hadolint/hadolint:latest \
-              hadolint ${{ inputs.hadolint-options }} - < "${p}"
+              hadolint "--failure-threshold=${HADOLINT_FAILURE_THRESHOLD}" - < "${p}"
           done
       - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
         uses: aquasecurity/trivy-action@0.28.0

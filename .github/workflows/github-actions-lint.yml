@@ -18,39 +18,28 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      yamllint-options:
-        required: false
-        type: string
-        description: Options to pass to yamllint
-        default: >
-          -d '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
-      actionlint-options:
-        required: false
-        type: string
-        description: Options to pass to actionlint
-        default: null
       use-shellcheck:
         required: false
         type: boolean
         description: Whether to use ShellCheck
+        default: true
+      use-pyflakes:
+        required: false
+        type: boolean
+        description: Whether to use pyflakes
         default: true
       use-yamllint:
         required: false
         type: boolean
         description: Whether to use yamllint
         default: true
-      runs-on:
-        required: false
-        type: string
-        description: GitHub Actions runner to use
-        default: ubuntu-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  lint:
-    runs-on: ${{ inputs.runs-on }}
+  github-actions-lint:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,28 +49,30 @@ jobs:
           go-version: ${{ inputs.go-version }}
           cache: false
       - name: Install actionlint
-        run: |
+        run: >
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
       - name: Install ShellCheck
-        if: ${{ inputs.use-shellcheck }}
+        if: inputs.use-shellcheck
         run: |
           sudo apt-get -y update
           sudo apt-get -y install --no-install-recommends --no-install-suggests shellcheck
       - name: Setup Python
-        if: ${{ inputs.use-yamllint }}
+        if: inputs.use-pyflakes
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Install yamllint
-        if: ${{ inputs.use-yamllint }}
-        run: |
-          pip install -U --no-cache-dir yamllint
+      - name: Install pyflakes
+        if: inputs.use-pyflakes
+        run: >
+          pip install -U --no-cache-dir pyflakes
       - name: Execute actionlint
+        working-directory: ${{ inputs.search-path }}
         run: >
-          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
-          | xargs -0 -t actionlint ${{ inputs.actionlint-options }}
-      - name: Execute yamllint
-        if: ${{ inputs.use-yamllint }}
-        run: >
-          find ${{ inputs.search-path }} -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
-          | xargs -0 -t yamllint ${{ inputs.yamllint-options }}
+          find . -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
+          | xargs -0 -t actionlint
+  yaml-lint:
+    if: inputs.use-yamllint
+    uses: ./.github/workflows/yaml-lint.yml
+    with:
+      search-path: ${{ inputs.search-path }}
+      python-version: ${{ inputs.python-version }}

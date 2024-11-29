@@ -93,7 +93,7 @@ jobs:
           } | sort -u -o "${IMAGE_URI_LIST_TXT}"
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
       - name: Tag the Docker images
-        if: ${{ inputs.tag-source-to-target-json != null }}
+        if: inputs.tag-source-to-target-json != null
         run: |
           echo "${TAG_SOURCE_TO_TARGET_JSON}" \
             | jq -r 'to_entries[] | "docker tag \(.key) \(.value)"' \
