@@ -205,7 +205,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Extract metadata from Git reference and GitHub events
         id: meta
-        uses: docker/metadata-action@v5.5.1
+        uses: docker/metadata-action@v5.6.1
         with:
           images: ${{ inputs.registry }}/${{ inputs.image-name }}
           tags: ${{ inputs.docker-metadata-action-tags }}
