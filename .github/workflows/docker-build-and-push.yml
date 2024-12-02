@@ -28,6 +28,11 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
+      platforms:
+        required: false
+        type: string
+        description: List of target platforms for build
+        default: linux/amd64,linux/arm64
       target:
         required: false
         type: string
@@ -38,11 +43,21 @@ on:
         type: string
         description: List of build-time variables
         default: null
-      platforms:
+      secrets:
         required: false
         type: string
-        description: List of target platforms for build
-        default: linux/amd64,linux/arm64
+        description: List of secrets to expose to the build (e.g., key=string, GIT_AUTH_TOKEN=mytoken)
+        default: null
+      secret-envs:
+        required: false
+        type: string
+        description: List of secret env vars to expose to the build (e.g., key=envname, MY_SECRET=MY_ENV_VAR)
+        default: null
+      secret-files:
+        required: false
+        type: string
+        description: List of secret files to expose to the build (e.g., key=filename, MY_SECRET=./secret.txt)
+        default: null
       cosign:
         required: false
         type: boolean
@@ -222,9 +237,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           context: ${{ inputs.context }}
           file: ${{ inputs.file }}
+          platforms: ${{ inputs.platforms }}
           target: ${{ inputs.target }}
           build-args: ${{ inputs.build-args }}
-          platforms: ${{ inputs.platforms }}
+          secrets: ${{ inputs.secrets }}
+          secret-envs: ${{ inputs.secret-envs }}
+          secret-files: ${{ inputs.secret-files }}
           push: ${{ inputs.push }}
           pull: true
           load: ${{ inputs.load }}
