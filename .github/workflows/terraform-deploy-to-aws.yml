@@ -38,6 +38,16 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      terraform-var-file:
+        required: false
+        type: string
+        description: Terraform variable file to use
+        default: null
+      terraform-backend-config:
+        required: false
+        type: string
+        description: Terraform backend configuration
+        default: null
       use-docker:
         required: false
         type: boolean
@@ -163,8 +173,14 @@ jobs:
       - name: Prepare working directories for Terraform
         if: inputs.terragrunt-version == null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
+        env:
+          TERRAFORM_BACKEND_CONFIG: ${{ inputs.terraform-backend-config }}
         run: |
-          terraform init
+          if [[ -n "${TERRAFORM_BACKEND_CONFIG}" ]]; then
+            terraform init -backend-config="${TERRAFORM_BACKEND_CONFIG}"
+          else
+            terraform init
+          fi
       - name: Check whether the configuration of Terraform and Terragrunt is valid
         if: inputs.terragrunt-version != null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
@@ -182,9 +198,15 @@ jobs:
           terragrunt run-all plan
       - name: Show changes required by the current configuration of Terraform
         if: (! inputs.apply) && inputs.terragrunt-version == null
+        env:
+          TERRAFORM_VAR_FILE: ${{ inputs.terraform-var-file }}
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          terraform plan
+          if [[ -n "${TERRAFORM_VAR_FILE}" ]]; then
+            terraform plan -var-file="${TERRAFORM_VAR_FILE}"
+          else
+            terraform plan
+          fi
       - name: Create or update infrastructure using Terraform and Terragrunt
         if: inputs.apply && inputs.terragrunt-version != null
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
@@ -192,6 +214,12 @@ jobs:
           terragrunt run-all apply --terragrunt-non-interactive
       - name: Create or update infrastructure using Terraform
         if: inputs.apply && inputs.terragrunt-version == null
+        env:
+          TERRAFORM_VAR_FILE: ${{ inputs.terraform-var-file }}
         working-directory: ${{ inputs.terraform-or-terragrunt-working-directory }}
         run: |
-          terraform apply -auto-approve
+          if [[ -n "${TERRAFORM_VAR_FILE}" ]]; then
+            terraform apply -auto-approve -var-file="${TERRAFORM_VAR_FILE}"
+          else
+            terraform apply -auto-approve
+          fi
