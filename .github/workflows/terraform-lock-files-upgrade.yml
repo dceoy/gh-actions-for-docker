@@ -82,6 +82,7 @@ jobs:
         env:
           TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON: ${{ inputs.terraform-working-directory-to-version-tf-json }}
           TERRAGRUNT_WORKING_DIRECTORIES: ${{ inputs.terragrunt-working-directories }}
+          TERRAFORM_WORKING_DIRECTORIES: ${{ inputs.terraform-working-directories }}
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
           TERRAFORM_INIT: terraform init -backend=false -upgrade -reconfigure && rm -rf .terraform
           TERRAGRUNT_INIT: terragrunt init --terragrunt-non-interactive -backend=false -upgrade -reconfigure && rm -rf .terragrunt-cache
@@ -121,6 +122,7 @@ jobs:
         env:
           TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON: ${{ inputs.terraform-working-directory-to-version-tf-json }}
           TERRAGRUNT_WORKING_DIRECTORIES: ${{ inputs.terragrunt-working-directories }}
+          TERRAFORM_WORKING_DIRECTORIES: ${{ inputs.terraform-working-directories }}
           TERRAFORM_LOCK_FILE: .terraform.lock.hcl
           TERRAFORM_VALIDATE: terraform init -backend=false && terraform validate && rm -rf .terraform
           TERRAGRUNT_VALIDATE: terragrunt init --terragrunt-non-interactive -backend=false && terragrunt validate && rm -rf .terragrunt-cache
