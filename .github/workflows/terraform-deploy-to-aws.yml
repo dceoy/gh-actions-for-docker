@@ -78,10 +78,15 @@ on:
         type: string
         description: Docker image tarball artifact name to download
         default: null
-      environment-variables-to-set:
+      environment-variables:
         required: false
         type: string
         description: Environment variables to set (e.g., "FOO=bar")
+        default: null
+      environment-file:
+        required: false
+        type: string
+        description: Environment file to set environment variables
         default: null
       runs-on:
         required: false
@@ -105,10 +110,6 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
-      - name: Set environment variables
-        if: inputs.environment-variables-to-set != null
-        run: |
-          echo '${{ inputs.environment-variables-to-set }}' >> "${GITHUB_ENV}"
       - name: Download the image tarball artifact
         if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
         uses: actions/download-artifact@v4
@@ -117,10 +118,24 @@ jobs:
           path: /tmp/
       - name: Load the image tarball
         if: inputs.apply && inputs.use-docker && inputs.docker-image-artifact-name != null
+        env:
+          IMAGE_TAR: /tmp/${{ inputs.docker-image-artifact-name }}.tar
         run: |
-          docker load -i /tmp/${{ inputs.docker-image-artifact-name }}.tar
+          docker load -i "${IMAGE_TAR}"
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set environment variables from key-value pairs
+        if: inputs.environment-variables != null
+        env:
+          ENVIRONMENT_VARIABLES: ${{ inputs.environment-variables }}
+        run: |
+          echo "${ENVIRONMENT_VARIABLES}" >> "${GITHUB_ENV}"
+      - name: Set environment variables from file
+        if: inputs.environment-file != null
+        env:
+          ENVIRONMENT_FILE: ${{ inputs.environment-file }}
+        run: |
+          cat "${ENVIRONMENT_FILE}" >> "${GITHUB_ENV}"
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
