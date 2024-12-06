@@ -90,18 +90,18 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  pr-branch-merge:
+  branch-merge:
     if: >
       inputs.merged-pr-branch-prefix != null && github.event_name == 'pull_request'
     uses: ./.github/workflows/github-pr-branch-aggregation.yml
     with:
-      pr-branch-prefix: ${{ inputs.merged-pr-branch-prefix }}
+      branch-prefix: ${{ inputs.merged-pr-branch-prefix }}
       delete-merged-branch: false
   terraform-lock-files-upgrade:
     if: >
       (! (failure() || cancelled()))
     needs:
-      - pr-branch-merge
+      - branch-merge
     uses: ./.github/workflows/terraform-lock-files-upgrade.yml
     with:
       terraform-working-directories: ${{ inputs.terraform-working-directories }}
@@ -127,7 +127,7 @@ jobs:
       trivy-timeout: ${{ inputs.trivy-timeout }}
       terraform-validate: false
       runs-on: ${{ inputs.runs-on }}
-  merge-pull-request:
+  pr-merge:
     if: >
       inputs.merge-pr && github.event_name == 'pull_request'
     needs:

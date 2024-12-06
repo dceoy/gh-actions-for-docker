@@ -3,7 +3,7 @@ name: Aggregation of open pull request branches
 on:
   workflow_call:
     inputs:
-      pr-branch-prefix:
+      branch-prefix:
         required: false
         type: string
         description: Prefix of the branches to merge (e.g., dependabot/terraform/)
@@ -16,7 +16,7 @@ on:
     outputs:
       merged-pr-branches-json:
         description: JSON array of the merged branches
-        value: ${{ jobs.list-pr-branches.outputs.pr_branches_json }}
+        value: ${{ jobs.branch-list.outputs.pr_branches_json }}
     secrets:
       GH_TOKEN:
         required: false
@@ -29,13 +29,14 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  list-pr-branches:
-    if: github.event_name == 'pull_request'
+  branch-list:
+    if: >
+      github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-      PR_BRANCH_PREFIX: ${{ inputs.pr-branch-prefix }}
+      BRANCH_PREFIX: ${{ inputs.branch-prefix }}
       HEAD_REF: ${{ github.head_ref }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
     outputs:
       pr_branches_json: ${{ steps.list-open-prs.outputs.pr_branches_json }}
     steps:
@@ -45,18 +46,20 @@ jobs:
         id: list-open-prs
         run: |
           gh pr list --state open --json headRefName \
-            --jq ".[].headRefName | select(. | startswith(\"${PR_BRANCH_PREFIX}\"))" \
+            --jq ".[].headRefName | select(. | startswith(\"${BRANCH_PREFIX}\"))" \
             | tac \
             | jq -rRs "split(\"\\n\")[:-1] | .-[\"${HEAD_REF}\"] | \"pr_branches_json=\\(.)\"" \
             | tee -a "${GITHUB_OUTPUT}"
-  merge-pr-branches:
-    if: needs.list-pr-branches.outputs.pr_branches_json != '[]'
+  branch-merge:
+    if: >
+      needs.branch-list.outputs.pr_branches_json != '[]'
     needs:
-      - list-pr-branches
+      - branch-list
     runs-on: ubuntu-latest
     env:
-      PR_BRANCHES_JSON: ${{ needs.list-pr-branches.outputs.pr_branches_json }}
+      BRANCHES_JSON: ${{ needs.branch-list.outputs.pr_branches_json }}
       HEAD_REF: ${{ github.head_ref }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,18 +67,18 @@ jobs:
           fetch-depth: 0
       - name: Fetch the remote branches
         run: |
-          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -t git fetch origin
+          jq -r '.[]' <<< "${BRANCHES_JSON}" | xargs -t git fetch origin
       - name: Configure the Git user
         run: |
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
       - name: Merge the branches
         run: |
-          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -I{} -t git merge --no-edit origin/{}
+          jq -r '.[]' <<< "${BRANCHES_JSON}" | xargs -I{} -t git merge --no-edit origin/{}
       - name: Push the changes
         run: |
           git push origin "HEAD:${HEAD_REF}"
       - name: Delete the merged branches
         if: inputs.delete-merged-branch
         run: |
-          jq -r '.[]' <<< "${PR_BRANCHES_JSON}" | xargs -t git push origin --delete
+          jq -r '.[]' <<< "${BRANCHES_JSON}" | xargs -t git push origin --delete
