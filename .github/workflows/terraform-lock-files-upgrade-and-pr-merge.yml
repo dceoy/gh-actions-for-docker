@@ -129,7 +129,7 @@ jobs:
       runs-on: ${{ inputs.runs-on }}
   pr-merge:
     if: >
-      inputs.merge-pr && github.event_name == 'pull_request'
+      github.event_name == 'pull_request'
     needs:
       - terraform-lint-and-scan
     runs-on: ubuntu-latest
@@ -141,5 +141,6 @@ jobs:
         run: >
           gh pr review --approve "${PR_URL}"
       - name: Merge the pull request
+        if: inputs.merge-pr
         run: >
           gh pr merge --merge --delete-branch "${PR_URL}"
