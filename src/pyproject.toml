@@ -13,7 +13,7 @@ PyYAML = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.4"
-types-pyyaml = "^6.0.12.20240917"
+types-pyyaml = "^6.0.12.20241221"
 pyright = "^1.1.391"
 
 [tool.ruff]
