@@ -22,11 +22,6 @@ on:
         type: string
         description: Python version to use
         default: 3.x
-      retention-days:
-        required: false
-        type: number
-        description: Number of days to retain artifacts
-        default: 1
       artifact-name:
         required: false
         type: string
@@ -37,6 +32,16 @@ on:
         type: string
         description: Path to the artifact
         default: dist
+      artifact-retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
+      artifact-overwrite:
+        required: false
+        type: boolean
+        description: Overwrite existing artifacts
+        default: true
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -70,4 +75,5 @@ jobs:
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.artifact-path }}
-          retention-days: ${{ inputs.retention-days }}
+          retention-days: ${{ inputs.artifact-retention-days }}
+          overwrite: ${{ inputs.artifact-overwrite }}

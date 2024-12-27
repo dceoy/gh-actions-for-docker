@@ -23,6 +23,16 @@ on:
         type: string
         description: Python version to use
         default: 3.x
+      artifact-retention-days:
+        required: false
+        type: number
+        description: Number of days to retain artifacts
+        default: 1
+      artifact-overwrite:
+        required: false
+        type: boolean
+        description: Overwrite existing artifacts
+        default: true
       runs-on:
         required: false
         type: string
@@ -86,6 +96,8 @@ jobs:
         with:
           name: python-package-distributions
           path: /tmp/${{ steps.read-project-name.outputs.project_name }}_dist/
+          retention-days: ${{ inputs.artifact-retention-days }}
+          overwrite: ${{ inputs.artifact-overwrite }}
   publish-to-testpypi:
     name: Publish the Python 🐍 distribution 📦 to TestPyPI
     if: >

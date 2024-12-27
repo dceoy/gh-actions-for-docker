@@ -143,6 +143,11 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      image-artifact-overwrite:
+        required: false
+        type: boolean
+        description: Overwrite existing artifacts
+        default: true
       runs-on:
         required: false
         type: string
@@ -275,6 +280,7 @@ jobs:
           name: ${{ inputs.image-artifact-name }}
           path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.image-artifact-retention-days }}
+          overwrite: ${{ inputs.image-artifact-overwrite }}
       - name: Run Trivy vulnerability scanner
         if: inputs.scan-after-build
         uses: aquasecurity/trivy-action@0.29.0
