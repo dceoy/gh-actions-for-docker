@@ -68,8 +68,6 @@ jobs:
       || github.event_name == 'pull_request'
       || (github.event_name == 'workflow_dispatch' && inputs.workflow == 'lint')
     uses: ./.github/workflows/docker-lint-and-scan.yml
-    with:
-      dockerfile-paths: ./src/Dockerfile
   docker-build-and-push:
     if: >
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'build'
@@ -82,7 +80,6 @@ jobs:
       context: ./src
       file: ./src/Dockerfile
       push: true
-      image-artifact-name: docker-image
     secrets:
       DOCKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_TOKEN: ${{ secrets.GHCR_TOKEN }}

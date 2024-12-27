@@ -38,6 +38,16 @@ on:
         type: string
         description: Path to search for files to lint and scan
         default: .
+      use-tflint:
+        required: false
+        type: boolean
+        description: Use TFLint linter
+        default: true
+      use-trivy:
+        required: false
+        type: boolean
+        description: Use Trivy vulnerability scanner
+        default: true
       trivy-scanners:
         required: false
         type: string
@@ -119,13 +129,15 @@ jobs:
       search-path: ${{ inputs.search-path-for-lint-and-scan }}
       terraform-version: ${{ inputs.terraform-version }}
       terragrunt-version: ${{ inputs.terragrunt-version }}
+      terraform-validate: false
+      use-tflint: ${{ inputs.use-tflint }}
+      use-trivy: ${{ inputs.use-trivy }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-severity: ${{ inputs.trivy-severity }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
       trivy-exit-code: ${{ inputs.trivy-exit-code }}
       trivy-config: ${{ inputs.trivy-config }}
       trivy-timeout: ${{ inputs.trivy-timeout }}
-      terraform-validate: false
       runs-on: ${{ inputs.runs-on }}
   pr-merge:
     if: >

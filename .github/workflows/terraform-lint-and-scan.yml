@@ -18,6 +18,21 @@ on:
         type: string
         description: Terragrunt version to use
         default: null
+      terraform-validate:
+        required: false
+        type: boolean
+        description: Validate Terraform code
+        default: true
+      use-tflint:
+        required: false
+        type: boolean
+        description: Use TFLint linter
+        default: true
+      use-trivy:
+        required: false
+        type: boolean
+        description: Use Trivy vulnerability scanner
+        default: true
       trivy-scanners:
         required: false
         type: string
@@ -48,11 +63,6 @@ on:
         type: string
         description: Timeout for the Trivy scan
         default: 5m0s
-      terraform-validate:
-        required: false
-        type: boolean
-        description: Validate Terraform code
-        default: true
       runs-on:
         required: false
         type: string
@@ -107,13 +117,23 @@ jobs:
         run: >
           terragrunt hclfmt --terragrunt-check --terragrunt-diff
       - name: Lint the code using tflint
+        if: inputs.use-tflint
         working-directory: ${{ inputs.search-path }}
         run: |
           tflint --recursive --filter .
+      - name: Validate the code using terraform validate
+        if: inputs.terraform-validate
+        working-directory: ${{ inputs.search-path }}
+        run: |
+          find . -type f -name '*.tf' -exec dirname {} \; \
+            | sort -u \
+            | xargs -I{} -t bash -c \
+              'cd {} && terraform init -backend=false && terraform validate'
       - name: Run Trivy vulnerability scanner in IaC mode
+        if: inputs.use-trivy
         uses: aquasecurity/trivy-action@0.29.0
         with:
-          scan-type: config
+          scan-type: filesystem
           scan-ref: ${{ inputs.search-path }}
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
@@ -128,11 +148,3 @@ jobs:
           TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
-      - name: Validate the code using terraform validate
-        if: inputs.terraform-validate
-        working-directory: ${{ inputs.search-path }}
-        run: |
-          find . -type f -name '*.tf' -exec dirname {} \; \
-            | sort -u \
-            | xargs -I{} -t bash -c \
-              'cd {} && terraform init -backend=false && terraform validate'

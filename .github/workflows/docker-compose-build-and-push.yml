@@ -16,12 +16,12 @@ on:
       registry:
         required: false
         type: string
-        description: Registry to push the image to (e.g., ghcr.io, docker.io)
+        description: Image registry to login (e.g., ghcr.io, docker.io)
         default: ghcr.io
       registry-user:
         required: false
         type: string
-        description: Registry username
+        description: Image registry username
         default: ${{ github.repository_owner }}
       runs-on:
         required: false

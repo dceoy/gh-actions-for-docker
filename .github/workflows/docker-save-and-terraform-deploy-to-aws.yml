@@ -8,6 +8,16 @@ on:
         type: string
         description: JSON object with Docker image names as keys and Docker build target stages as values
         default: null
+      docker-registry:
+        required: false
+        type: string
+        description: Image registry to login (e.g., ghcr.io, docker.io)
+        default: null
+      docker-registry-user:
+        required: false
+        type: string
+        description: Image registry username
+        default: ${{ github.repository_owner }}
       docker-build-context:
         required: false
         type: string
@@ -18,10 +28,65 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
+      docker-platforms:
+        required: false
+        type: string
+        description: List of target platforms for build
+        default: linux/amd64,linux/arm64
+      docker-build-args:
+        required: false
+        type: string
+        description: List of build-time variables
+        default: null
+      docker-secrets:
+        required: false
+        type: string
+        description: List of secrets to expose to the build (e.g., key=string, GIT_AUTH_TOKEN=mytoken)
+        default: null
+      docker-secret-envs:
+        required: false
+        type: string
+        description: List of secret env vars to expose to the build (e.g., key=envname, MY_SECRET=MY_ENV_VAR)
+        default: null
+      docker-secret-files:
+        required: false
+        type: string
+        description: List of secret files to expose to the build (e.g., key=filename, MY_SECRET=./secret.txt)
+        default: null
+      cosign:
+        required: false
+        type: boolean
+        description: Sign the image with cosign
+        default: false
       scan-before-build:
         required: false
         type: boolean
         description: Scan Dockerfile before build
+        default: true
+      scan-after-build:
+        required: false
+        type: boolean
+        description: Scan Docker image after build
+        default: true
+      scan-after-pull:
+        required: false
+        type: boolean
+        description: Scan the image after pull
+        default: true
+      use-hadolint:
+        required: false
+        type: boolean
+        description: Use Hadolint linter
+        default: true
+      hadolint-failure-threshold:
+        required: false
+        type: string
+        description: Hadolint failure threshold
+        default: error
+      hadolint-recursive:
+        required: false
+        type: boolean
+        description: Search for Dockerfile recursively from the project root
         default: true
       trivy-scanners:
         required: false
@@ -38,11 +103,16 @@ on:
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
-      trivy-exit-code:
+      trivy-filesystem-exit-code:
         required: false
         type: number
-        description: Exit code for pre-build scan
+        description: Exit code for trivy filesystem
         default: 1
+      trivy-image-exit-code:
+        required: false
+        type: number
+        description: Exit code for trivy image
+        default: 0
       trivy-config:
         required: false
         type: string
@@ -148,6 +218,11 @@ on:
         type: number
         description: Number of days to retain artifacts
         default: 1
+      docker-image-artifact-overwrite:
+        required: false
+        type: boolean
+        description: Overwrite existing artifacts
+        default: true
       runs-on:
         required: false
         type: string
@@ -172,19 +247,38 @@ jobs:
     uses: ./.github/workflows/docker-build-with-multi-targets.yml
     with:
       image-name-to-target-stage-json: ${{ inputs.docker-image-name-to-target-stage-json }}
+      registry: ${{ inputs.docker-registry }}
+      registry-user: ${{ inputs.docker-registry-user }}
       context: ${{ inputs.docker-build-context }}
       file: ${{ inputs.dockerfile }}
+      platforms: ${{ inputs.docker-platforms }}
+      build-args: ${{ inputs.docker-build-args }}
+      secrets: ${{ inputs.docker-secrets }}
+      secret-envs: ${{ inputs.docker-secret-envs }}
+      secret-files: ${{ inputs.docker-secret-files }}
+      cosign: ${{ inputs.cosign }}
+      push: false
       scan-before-build: ${{ inputs.scan-before-build }}
+      scan-after-build: ${{ inputs.scan-after-build }}
+      use-hadolint: ${{ inputs.use-hadolint }}
+      hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+      hadolint-recursive: ${{ inputs.hadolint-recursive }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-severity: ${{ inputs.trivy-severity }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-      trivy-exit-code: ${{ inputs.trivy-exit-code }}
+      trivy-filesystem-exit-code: ${{ inputs.trivy-filesystem-exit-code }}
+      trivy-image-exit-code: ${{ inputs.trivy-image-exit-code }}
       trivy-config: ${{ inputs.trivy-config }}
       trivy-timeout: ${{ inputs.trivy-timeout }}
+      docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+      image-artifact-overwrite: ${{ inputs.docker-image-artifact-overwrite }}
       runs-on: ${{ inputs.runs-on }}
       timeout-minutes: ${{ inputs.timeout-minutes }}
+    secrets:
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
   pull:
     if: >
       inputs.apply && inputs.docker-image-name-to-target-stage-json == null
@@ -198,6 +292,14 @@ jobs:
       aws-profile-env-file: ${{ inputs.source-aws-profile-env-file }}
       image-artifact-name: ${{ inputs.docker-image-artifact-name }}
       image-artifact-retention-days: ${{ inputs.docker-image-artifact-retention-days }}
+      image-artifact-overwrite: ${{ inputs.docker-image-artifact-overwrite }}
+      scan-after-pull: ${{ inputs.scan-after-pull }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-exit-code: ${{ inputs.trivy-image-exit-code }}
+      trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
       runs-on: ${{ inputs.runs-on }}
       timeout-minutes: ${{ inputs.timeout-minutes }}
   deploy:

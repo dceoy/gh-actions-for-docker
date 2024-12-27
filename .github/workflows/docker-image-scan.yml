@@ -3,10 +3,10 @@ name: Security scan for Docker images
 on:
   workflow_call:
     inputs:
-      image-refs:
+      image-refs-json:
         required: true
         type: string
-        description: Image references (JSON array)
+        description: JSON array of image references to scan
       image-artifact-name:
         required: false
         type: string
@@ -76,7 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image-ref: ${{ fromJSON(inputs.image-refs) }}
+        image-ref: ${{ fromJSON(inputs.image-refs-json) }}
     steps:
       - name: Download the image tarball artifact
         if: inputs.image-artifact-name != null

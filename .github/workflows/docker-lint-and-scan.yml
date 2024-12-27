@@ -3,21 +3,31 @@ name: Lint and security scan for Dockerfile
 on:
   workflow_call:
     inputs:
-      dockerfile-paths:
+      file:
         required: false
         type: string
-        description: Paths to files to lint and scan (separated by spaces or returns)
-        default: ./Dockerfile
-      directory-to-scan:
+        description: Dockerfile name to lint and scan
+        default: Dockerfile
+      use-hadolint:
         required: false
-        type: string
-        description: Directory to scan with Trivy
-        default: .
+        type: boolean
+        description: Use Hadolint linter
+        default: true
       hadolint-failure-threshold:
         required: false
         type: string
         description: Hadolint failure threshold
         default: error
+      hadolint-recursive:
+        required: false
+        type: boolean
+        description: Search for Dockerfile recursively from the project root
+        default: true
+      trivy-scan-ref:
+        required: false
+        type: string
+        description: Directory to scan with Trivy
+        default: .
       trivy-scanners:
         required: false
         type: string
@@ -70,19 +80,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Lint the code using hadolint
-        env:
-          DOCKERFILE_PATHS: ${{ inputs.dockerfile-paths }}
-          HADOLINT_FAILURE_THRESHOLD: ${{ inputs.hadolint-failure-threshold }}
-        run: |
-          for p in $(echo "${DOCKERFILE_PATHS}" | tr ' ' '\n'); do
-            docker run --rm -i ghcr.io/hadolint/hadolint:latest \
-              hadolint "--failure-threshold=${HADOLINT_FAILURE_THRESHOLD}" - < "${p}"
-          done
+        if: ${{ inputs.use-hadolint }}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ inputs.file }}
+          failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+          recursive: ${{ inputs.hadolint-recursive }}
       - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
         uses: aquasecurity/trivy-action@0.29.0
         with:
           scan-type: filesystem
-          scan-ref: ${{ inputs.directory-to-scan }}
+          scan-ref: ${{ inputs.trivy-scan-ref }}
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}

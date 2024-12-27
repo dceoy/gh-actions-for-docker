@@ -8,6 +8,16 @@ on:
         type: string
         description: JSON object with image names as keys and target stages as values
         default: null
+      registry:
+        required: false
+        type: string
+        description: Image registry to login (e.g., ghcr.io, docker.io)
+        default: null
+      registry-user:
+        required: false
+        type: string
+        description: Image registry username
+        default: ${{ github.repository_owner }}
       context:
         required: false
         type: string
@@ -18,10 +28,65 @@ on:
         type: string
         description: Path to a Dockerfile
         default: Dockerfile
+      platforms:
+        required: false
+        type: string
+        description: List of target platforms for build
+        default: linux/amd64,linux/arm64
+      build-args:
+        required: false
+        type: string
+        description: List of build-time variables
+        default: null
+      secrets:
+        required: false
+        type: string
+        description: List of secrets to expose to the build (e.g., key=string, GIT_AUTH_TOKEN=mytoken)
+        default: null
+      secret-envs:
+        required: false
+        type: string
+        description: List of secret env vars to expose to the build (e.g., key=envname, MY_SECRET=MY_ENV_VAR)
+        default: null
+      secret-files:
+        required: false
+        type: string
+        description: List of secret files to expose to the build (e.g., key=filename, MY_SECRET=./secret.txt)
+        default: null
+      cosign:
+        required: false
+        type: boolean
+        description: Sign the image with cosign
+        default: false
+      push:
+        required: false
+        type: boolean
+        description: Push an image to the registry
+        default: true
       scan-before-build:
         required: false
         type: boolean
         description: Scan Dockerfile before build
+        default: true
+      scan-after-build:
+        required: false
+        type: boolean
+        description: Scan the image after build
+        default: true
+      use-hadolint:
+        required: false
+        type: boolean
+        description: Use Hadolint linter
+        default: true
+      hadolint-failure-threshold:
+        required: false
+        type: string
+        description: Hadolint failure threshold
+        default: error
+      hadolint-recursive:
+        required: false
+        type: boolean
+        description: Search for Dockerfile recursively from the project root
         default: true
       trivy-scanners:
         required: false
@@ -38,11 +103,16 @@ on:
         type: boolean
         description: Ignore unpatched/unfixed vulnerabilities
         default: true
-      trivy-exit-code:
+      trivy-filesystem-exit-code:
         required: false
         type: number
-        description: Exit code for Trivy
+        description: Exit code for trivy filesystem
         default: 1
+      trivy-image-exit-code:
+        required: false
+        type: number
+        description: Exit code for trivy image
+        default: 0
       trivy-config:
         required: false
         type: string
@@ -53,11 +123,26 @@ on:
         type: string
         description: Timeout for the Trivy scan
         default: 5m0s
+      docker-metadata-action-tags:
+        required: false
+        type: string
+        description: Tags for the Docker metadata action
+        default: |
+          type=sha
+          type=sha,format=long
+          type=raw,value=latest
+          type=schedule
+          type=ref,event=branch
+          type=ref,event=tag
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
       image-artifact-name:
         required: false
         type: string
         description: Image tarball artifact name to upload
-        default: null
+        default: docker-image
       image-artifact-retention-days:
         required: false
         type: number
@@ -79,6 +164,9 @@ on:
         description: Timeout in minutes for the job
         default: 360
     secrets:
+      DOCKER_TOKEN:
+        required: false
+        description: Registry token
       GH_TOKEN:
         required: false
         description: GitHub token
@@ -89,59 +177,59 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  build-and-save:
-    runs-on: ${{ inputs.runs-on }}
-    timeout-minutes: ${{ inputs.timeout-minutes }}
-    env:
-      IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+  create-target-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      target-matrix-json: ${{ steps.create-target-matrix.outputs.target_matrix_json }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
-        if: inputs.scan-before-build
-        uses: aquasecurity/trivy-action@0.29.0
-        with:
-          scan-type: filesystem
-          scan-ref: ${{ inputs.context }}
-          scanners: ${{ inputs.trivy-scanners }}
-          severity: ${{ inputs.trivy-severity }}
-          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: ${{ inputs.trivy-exit-code }}
-          trivy-config: ${{ inputs.trivy-config }}
-          timeout: ${{ inputs.trivy-timeout }}
-          format: github
-          output: dependency-results.sbom.json
-          github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        env:
-          TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
-          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
-          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
-      - name: Build images for multiple target stages
-        env:
-          IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
-          FILE: ${{ inputs.file }}
-          CONTEXT: ${{ inputs.context }}
-          DOCKER_BUILDX_BUILD_OPTIONS: --cache-to type=gha,mode=max --cache-from type=gha
-        run: >
-          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}"
-          | jq -r 'to_entries[] | "--tag \(.key) --target \(.value)"'
-          | xargs -I{} -t bash -c
-          "docker buildx build --load {} --file ${FILE} ${DOCKER_BUILDX_BUILD_OPTIONS} ${CONTEXT}"
-      - name: Save the images as a tarball
+      - name: Create the target matrix
+        id: create-target-matrix
         env:
           IMAGE_NAME_TO_TARGET_STAGE_JSON: ${{ inputs.image-name-to-target-stage-json }}
         run: >
-          echo "${IMAGE_NAME_TO_TARGET_STAGE_JSON}"
-          | jq -r 'keys[]'
-          | xargs -t docker save -o "${IMAGE_TAR}"
-      - name: Upload the image tarball
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.image-artifact-name }}
-          path: ${{ env.IMAGE_TAR }}
-          retention-days: ${{ inputs.image-artifact-retention-days }}
-          overwrite: ${{ inputs.image-artifact-overwrite }}
+          jq -c 'to_entries[]' <<< "${IMAGE_NAME_TO_TARGET_STAGE_JSON}"
+          | jq -rRs 'split("\n")[:-1] | "target_matrix_json=\(.)"'
+          | tee -a "${GITHUB_OUTPUT}"
+  build-and-push:
+    needs:
+      - create-target-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        image-to-target: ${{ fromJSON(needs.create-target-matrix.outputs.target-matrix-json) }}
+    uses: ./.github/workflows/docker-build-and-push.yml
+    with:
+      registry: ${{ inputs.registry }}
+      registry-user: ${{ inputs.registry-user }}
+      image-name: ${{ matrix.image-to-target.key }}
+      context: ${{ inputs.context }}
+      file: ${{ inputs.file }}
+      platforms: ${{ inputs.platforms }}
+      target: ${{ fromJSON(matrix.image-to-target).value }}
+      build-args: ${{ inputs.build-args }}
+      secrets: ${{ inputs.secrets }}
+      secret-envs: ${{ inputs.secret-envs }}
+      secret-files: ${{ inputs.secret-files }}
+      cosign: ${{ inputs.cosign }}
+      push: ${{ inputs.push }}
+      scan-before-build: ${{ inputs.scan-before-build }}
+      scan-after-build: ${{ inputs.scan-after-build }}
+      use-hadolint: ${{ inputs.use-hadolint }}
+      hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+      hadolint-recursive: ${{ inputs.hadolint-recursive }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-filesystem-exit-code: ${{ inputs.trivy-filesystem-exit-code }}
+      trivy-image-exit-code: ${{ inputs.trivy-image-exit-code }}
+      trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
+      docker-metadata-action-tags: ${{ inputs.docker-metadata-action-tags }}
+      image-artifact-name: ${{ inputs.image-artifact-name }}
+      image-artifact-retention-days: ${{ inputs.image-artifact-retention-days }}
+      image-artifact-overwrite: ${{ inputs.image-artifact-overwrite }}
+      runs-on: ${{ inputs.runs-on }}
+      timeout-minutes: ${{ inputs.timeout-minutes }}
+    secrets:
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}

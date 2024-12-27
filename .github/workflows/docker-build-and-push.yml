@@ -7,11 +7,11 @@ on:
         required: false
         type: string
         description: Image registry to login (e.g., ghcr.io, docker.io)
-        default: ghcr.io
+        default: null
       registry-user:
         required: false
         type: string
-        description: Registry username
+        description: Image registry username
         default: ${{ github.repository_owner }}
       image-name:
         required: false
@@ -68,11 +68,6 @@ on:
         type: boolean
         description: Push an image to the registry
         default: true
-      load:
-        required: false
-        type: boolean
-        description: Load the image after building
-        default: false
       scan-before-build:
         required: false
         type: boolean
@@ -82,6 +77,21 @@ on:
         required: false
         type: boolean
         description: Scan the image after build
+        default: true
+      use-hadolint:
+        required: false
+        type: boolean
+        description: Use Hadolint linter
+        default: true
+      hadolint-failure-threshold:
+        required: false
+        type: string
+        description: Hadolint failure threshold
+        default: error
+      hadolint-recursive:
+        required: false
+        type: boolean
+        description: Search for Dockerfile recursively from the project root
         default: true
       trivy-scanners:
         required: false
@@ -137,7 +147,7 @@ on:
         required: false
         type: string
         description: Image tarball artifact name to upload
-        default: null
+        default: docker-image
       image-artifact-retention-days:
         required: false
         type: number
@@ -183,7 +193,30 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
+  prebuild-lint-and-scan:
+    if: >
+      inputs.scan-before-build
+    uses: ./.github/workflows/docker-lint-and-scan.yml
+    with:
+      file: ${{ inputs.file }}
+      use-hadolint: ${{ inputs.use-hadolint }}
+      hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+      hadolint-recursive: ${{ inputs.hadolint-recursive }}
+      trivy-scan-ref: ${{ inputs.context }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-exit-code: ${{ inputs.trivy-filesystem-exit-code }}
+      trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
+      runs-on: ${{ inputs.runs-on }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
   build-and-push:
+    if: >
+      (! (failure() || cancelled()))
+    needs:
+      - prebuild-lint-and-scan
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     env:
@@ -192,6 +225,7 @@ jobs:
       metadata-json: ${{ steps.meta.outputs.json }}
       build-push-imageid: ${{ steps.docker-build.outputs.imageid }}
       build-push-digest: ${{ steps.docker-build.outputs.digest }}
+      image-ref: ${{ fromJson(steps.meta.outputs.json).tags[0] }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -204,25 +238,6 @@ jobs:
         uses: sigstore/cosign-installer@v3.7.0
         with:
           cosign-release: v2.2.2
-      - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
-        if: inputs.scan-before-build
-        uses: aquasecurity/trivy-action@0.29.0
-        with:
-          scan-type: filesystem
-          scan-ref: ${{ inputs.context }}
-          scanners: ${{ inputs.trivy-scanners }}
-          severity: ${{ inputs.trivy-severity }}
-          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: ${{ inputs.trivy-filesystem-exit-code }}
-          trivy-config: ${{ inputs.trivy-config }}
-          timeout: ${{ inputs.trivy-timeout }}
-          format: github
-          output: dependency-results.sbom.json
-          github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        env:
-          TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
-          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
-          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
       - name: Extract metadata from Git reference and GitHub events
         id: meta
         uses: docker/metadata-action@v5.6.1
@@ -230,6 +245,7 @@ jobs:
           images: ${{ inputs.registry }}/${{ inputs.image-name }}
           tags: ${{ inputs.docker-metadata-action-tags }}
       - name: Login to the Docker registry
+        if: inputs.registry != null
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
@@ -250,7 +266,7 @@ jobs:
           secret-files: ${{ inputs.secret-files }}
           push: ${{ inputs.push }}
           pull: true
-          load: ${{ inputs.load }}
+          load: ${{ ! inputs.push }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -262,41 +278,38 @@ jobs:
         run: >
           echo "${TAGS}" | xargs -I{} -t cosign sign --yes "{}@${DIGEST}"
       - name: Pull Docker images
-        if: inputs.push && (! inputs.load)
+        if: inputs.push
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: >
           echo "${TAGS}" | xargs -L1 -t docker pull
       - name: Save the image as a tarball
-        if: inputs.image-artifact-name != null
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: >
           echo "${TAGS}" | xargs -t docker save -o "${IMAGE_TAR}"
       - name: Upload the image tarball
-        if: inputs.image-artifact-name != null
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.image-artifact-name }}
           path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.image-artifact-retention-days }}
           overwrite: ${{ inputs.image-artifact-overwrite }}
-      - name: Run Trivy vulnerability scanner
-        if: inputs.scan-after-build
-        uses: aquasecurity/trivy-action@0.29.0
-        with:
-          scan-type: image
-          image-ref: ${{ fromJson(steps.meta.outputs.json).tags[0] }}
-          scanners: ${{ inputs.trivy-scanners }}
-          severity: ${{ inputs.trivy-severity }}
-          ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
-          exit-code: ${{ inputs.trivy-image-exit-code }}
-          trivy-config: ${{ inputs.trivy-config }}
-          timeout: ${{ inputs.trivy-timeout }}
-          format: github
-          output: dependency-results.sbom.json
-          github-pat: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        env:
-          TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
-          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
-          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
+  postbuild-scan:
+    if: >
+      inputs.scan-after-build
+    needs:
+      - build-and-push
+    uses: ./.github/workflows/docker-image-scan.yml
+    with:
+      image-refs-json: '["${{ needs.build-and-push.outputs.image-ref }}"]'
+      image-artifact-name: ${{ inputs.image-artifact-name }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-exit-code: ${{ inputs.trivy-image-exit-code }}
+      trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
+      runs-on: ${{ inputs.runs-on }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}

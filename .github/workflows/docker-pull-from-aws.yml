@@ -43,6 +43,41 @@ on:
         type: boolean
         description: Overwrite existing artifacts
         default: true
+      scan-after-pull:
+        required: false
+        type: boolean
+        description: Scan the image after pull
+        default: true
+      trivy-scanners:
+        required: false
+        type: string
+        description: List of scanners to use
+        default: vuln,secret,misconfig
+      trivy-severity:
+        required: false
+        type: string
+        description: Severity levels to fail the scan
+        default: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      trivy-ignore-unfixed:
+        required: false
+        type: boolean
+        description: Ignore unpatched/unfixed vulnerabilities
+        default: true
+      trivy-exit-code:
+        required: false
+        type: number
+        description: Exit code for pre-build scan
+        default: 1
+      trivy-config:
+        required: false
+        type: string
+        description: Path to a Trivy config file
+        default: null
+      trivy-timeout:
+        required: false
+        type: string
+        description: Timeout for the Trivy scan
+        default: 5m0s
       runs-on:
         required: false
         type: string
@@ -69,6 +104,8 @@ jobs:
       TAG_SOURCE_TO_TARGET_JSON: ${{ inputs.tag-source-to-target-json }}
       IMAGE_URI_LIST_TXT: /tmp/docker-registry-imageurls.${{ github.run_id }}.txt
       IMAGE_TAR: /tmp/${{ inputs.image-artifact-name }}.tar
+    outputs:
+      image-refs-json: ${{ steps.output-image-refs.outputs.image_refs_json }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -97,6 +134,10 @@ jobs:
             fi
           } | sort -u -o "${IMAGE_URI_LIST_TXT}"
           xargs -L1 -t docker pull < "${IMAGE_URI_LIST_TXT}"
+      - name: Output the image references
+        id: output-image-refs
+        run: |
+          jq -rRs 'split("\n")[:-1] | "image_refs_json=\(.)"' < "${IMAGE_URI_LIST_TXT}"
       - name: Tag the Docker images
         if: inputs.tag-source-to-target-json != null
         run: |
@@ -115,3 +156,21 @@ jobs:
           path: ${{ env.IMAGE_TAR }}
           retention-days: ${{ inputs.image-artifact-retention-days }}
           overwrite: ${{ inputs.image-artifact-overwrite }}
+  postpull-scan:
+    if: >
+      inputs.scan-after-pull
+    needs:
+      - pull-and-save
+    uses: ./.github/workflows/docker-image-scan.yml
+    with:
+      image-refs-json: ${{ needs.pull-and-save.outputs.image-refs-json }}
+      image-artifact-name: ${{ inputs.image-artifact-name }}
+      trivy-scanners: ${{ inputs.trivy-scanners }}
+      trivy-severity: ${{ inputs.trivy-severity }}
+      trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
+      trivy-exit-code: ${{ inputs.trivy-exit-code }}
+      trivy-config: ${{ inputs.trivy-config }}
+      trivy-timeout: ${{ inputs.trivy-timeout }}
+      runs-on: ${{ inputs.runs-on }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
