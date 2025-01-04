@@ -61,7 +61,7 @@ jobs:
         run: >
           if [[ -f poetry.lock ]]; then
             pip install -U --no-cache-dir poetry
-            poetry lock --no-update --no-interaction
+            poetry lock --no-interaction
             poetry add --group=dev --no-interaction \
               ${{ inputs.use-black && 'black' || 'ruff' }} \
               ${{ inputs.use-isort && 'isort' || '' }}

@@ -18,7 +18,7 @@ RUN \
       --mount=type=cache,target=/root/.cache \
       --mount=type=bind,source=.,target=/tmp/src \
       /usr/local/bin/pip install -U poetry \
-      && /usr/local/bin/poetry --directory=/tmp/src install --no-root --no-dev
+      && /usr/local/bin/poetry --directory=/tmp/src install --no-root --without=dev
 
 WORKDIR /root
 
