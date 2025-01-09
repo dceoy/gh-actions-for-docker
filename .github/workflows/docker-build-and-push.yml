@@ -58,16 +58,21 @@ on:
         type: string
         description: List of secret files to expose to the build (e.g., key=filename, MY_SECRET=./secret.txt)
         default: null
-      cosign:
-        required: false
-        type: boolean
-        description: Sign the image with cosign
-        default: false
       push:
         required: false
         type: boolean
         description: Push an image to the registry
         default: true
+      provenance:
+        required: false
+        type: boolean
+        description: Generate provenance attestation for the build
+        default: false
+      cosign:
+        required: false
+        type: boolean
+        description: Sign the image with cosign
+        default: false
       scan-before-build:
         required: false
         type: boolean
@@ -193,10 +198,10 @@ jobs:
       inputs.scan-before-build
     uses: ./.github/workflows/docker-lint-and-scan.yml
     with:
-      search-path: ${{ inputs.context }}
-      file: ${{ inputs.file }}
+      hadolint-dockerfile: ${{ inputs.file }}
       hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
       hadolint-recursive: ${{ inputs.hadolint-recursive }}
+      trivy-scan-ref: ${{ inputs.context }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-severity: ${{ inputs.trivy-severity }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
@@ -230,8 +235,6 @@ jobs:
       - name: Install cosign
         if: inputs.cosign && inputs.push
         uses: sigstore/cosign-installer@v3.7.0
-        with:
-          cosign-release: v2.2.2
       - name: Extract metadata from Git reference and GitHub events
         id: meta
         uses: docker/metadata-action@v5.6.1
@@ -261,6 +264,7 @@ jobs:
           push: ${{ inputs.push }}
           pull: true
           load: ${{ ! inputs.push }}
+          provenance: ${{ inputs.provenance }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

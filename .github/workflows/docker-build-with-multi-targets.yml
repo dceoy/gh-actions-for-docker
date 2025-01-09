@@ -53,6 +53,11 @@ on:
         type: string
         description: List of secret files to expose to the build (e.g., key=filename, MY_SECRET=./secret.txt)
         default: null
+      provenance:
+        required: false
+        type: boolean
+        description: Generate provenance attestation for the build
+        default: false
       cosign:
         required: false
         type: boolean
@@ -205,8 +210,9 @@ jobs:
       secrets: ${{ inputs.secrets }}
       secret-envs: ${{ inputs.secret-envs }}
       secret-files: ${{ inputs.secret-files }}
-      cosign: ${{ inputs.cosign }}
+      provenance: ${{ inputs.provenance }}
       push: ${{ inputs.push }}
+      cosign: ${{ inputs.cosign }}
       scan-before-build: ${{ inputs.scan-before-build }}
       scan-after-build: ${{ inputs.scan-after-build }}
       hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
