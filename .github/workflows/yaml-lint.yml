@@ -13,6 +13,11 @@ on:
         type: string
         description: Python version to use
         default: 3.x
+      yamllint-config-data:
+        required: false
+        type: string
+        description: Configuration data for yamllint
+        default: '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -31,8 +36,9 @@ jobs:
         run: >
           pip install -U --no-cache-dir yamllint
       - name: Execute yamllint
+        env:
+          YAMLLINT_CONFIG_DATA: ${{ inputs.yamllint-config-data }}
         working-directory: ${{ inputs.search-path }}
         run: >
           find . -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
-          | xargs -0 -t yamllint
-          --config-data '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
+          | xargs -0 -t yamllint --config-data="${YAMLLINT_CONFIG_DATA}"

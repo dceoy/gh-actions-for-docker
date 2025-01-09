@@ -18,6 +18,11 @@ on:
         type: boolean
         description: Whether to use yamllint
         default: true
+      yamllint-config-data:
+        required: false
+        type: string
+        description: Configuration data for yamllint
+        default: '{"extends": "relaxed", "rules": {"line-length": "disable"}}'
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -46,3 +51,4 @@ jobs:
     with:
       search-path: ${{ inputs.search-path }}
       python-version: ${{ inputs.python-version }}
+      yamllint-config-data: ${{ inputs.yamllint-config-data }}
