@@ -22,6 +22,9 @@ Reusable workflows
   - [docker-build-with-multi-targets.yml](.github/workflows/docker-build-with-multi-targets.yml)
     - Docker image build and save for multiple build targets
 
+  - [docker-buildx-bake.yml](.github/workflows/docker-buildx-bake.yml)
+    - Docker image build from a bake definition file
+
   - [docker-compose-build-and-push.yml](.github/workflows/docker-compose-build-and-push.yml)
     - Docker image build and push using docker-compose
 
