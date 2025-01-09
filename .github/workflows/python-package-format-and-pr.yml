@@ -93,6 +93,11 @@ jobs:
         working-directory: ${{ inputs.package-path }}
         run: >
           ${{ env.EXECUTOR }} ruff check --fix --output-format=github .
+      - name: Restore pyproject.toml and poetry.lock
+        if: startsWith(env.EXECUTOR, 'poetry')
+        working-directory: ${{ inputs.package-path }}
+        run: >
+          git restore pyproject.toml poetry.lock
       - name: Create output parameters
         id: parameters
         env:
