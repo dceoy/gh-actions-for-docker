@@ -3,16 +3,16 @@ name: Lint and security scan for Dockerfile
 on:
   workflow_call:
     inputs:
+      search-path:
+        required: false
+        type: string
+        description: Path to search for files
+        default: .
       file:
         required: false
         type: string
-        description: Dockerfile name to lint and scan
+        description: Dockerfile name
         default: Dockerfile
-      use-hadolint:
-        required: false
-        type: boolean
-        description: Use Hadolint linter
-        default: true
       hadolint-failure-threshold:
         required: false
         type: string
@@ -23,11 +23,6 @@ on:
         type: boolean
         description: Search for Dockerfile recursively from the project root
         default: true
-      trivy-scan-ref:
-        required: false
-        type: string
-        description: Directory to scan with Trivy
-        default: .
       trivy-scanners:
         required: false
         type: string
@@ -74,23 +69,16 @@ defaults:
     shell: bash -euo pipefail {0}
     working-directory: .
 jobs:
-  lint-and-scan:
+  scan:
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Lint the code using hadolint
-        if: ${{ inputs.use-hadolint }}
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: ${{ inputs.file }}
-          failure-threshold: ${{ inputs.hadolint-failure-threshold }}
-          recursive: ${{ inputs.hadolint-recursive }}
       - name: Run Trivy in GitHub SBOM mode and submit results to Dependency Graph
         uses: aquasecurity/trivy-action@0.29.0
         with:
           scan-type: filesystem
-          scan-ref: ${{ inputs.trivy-scan-ref }}
+          scan-ref: ${{ inputs.search-path }}
           scanners: ${{ inputs.trivy-scanners }}
           severity: ${{ inputs.trivy-severity }}
           ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
@@ -104,3 +92,38 @@ jobs:
           TRIVY_CHECKS_REPOSITORY: public.ecr.aws/aquasecurity/trivy-checks
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
+  search:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      dockerfile-paths: ${{ steps.find-dockerfile.outputs.dockerfile_paths }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Find Dockerfile
+        id: find-dockerfile
+        env:
+          SEARCH_PATH: ${{ inputs.search-path }}
+          DOCKERFILE: ${{ inputs.file }}
+        run: >
+          find "${SEARCH_PATH}" -type f -name "${DOCKERFILE}"
+          | jq -rRs 'split("\n")[:-1] | "dockerfile_paths=\(.)"'
+          | tee -a "${GITHUB_OUTPUT}"
+  lint:
+    if: >
+      (! (failure() || cancelled()))
+    needs:
+      - search
+    runs-on: ${{ inputs.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile-path: ${{ fromJSON(needs.search.outputs.dockerfile-paths) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Lint the code using hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile-path }}
+          failure-threshold: ${{ inputs.hadolint-failure-threshold }}
+          recursive: ${{ inputs.hadolint-recursive }}

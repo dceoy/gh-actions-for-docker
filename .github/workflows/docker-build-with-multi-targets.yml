@@ -73,11 +73,6 @@ on:
         type: boolean
         description: Scan the image after build
         default: true
-      use-hadolint:
-        required: false
-        type: boolean
-        description: Use Hadolint linter
-        default: true
       hadolint-failure-threshold:
         required: false
         type: string
@@ -214,7 +209,6 @@ jobs:
       push: ${{ inputs.push }}
       scan-before-build: ${{ inputs.scan-before-build }}
       scan-after-build: ${{ inputs.scan-after-build }}
-      use-hadolint: ${{ inputs.use-hadolint }}
       hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
       hadolint-recursive: ${{ inputs.hadolint-recursive }}
       trivy-scanners: ${{ inputs.trivy-scanners }}

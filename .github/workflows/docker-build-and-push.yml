@@ -78,11 +78,6 @@ on:
         type: boolean
         description: Scan the image after build
         default: true
-      use-hadolint:
-        required: false
-        type: boolean
-        description: Use Hadolint linter
-        default: true
       hadolint-failure-threshold:
         required: false
         type: string
@@ -198,11 +193,10 @@ jobs:
       inputs.scan-before-build
     uses: ./.github/workflows/docker-lint-and-scan.yml
     with:
+      search-path: ${{ inputs.context }}
       file: ${{ inputs.file }}
-      use-hadolint: ${{ inputs.use-hadolint }}
       hadolint-failure-threshold: ${{ inputs.hadolint-failure-threshold }}
       hadolint-recursive: ${{ inputs.hadolint-recursive }}
-      trivy-scan-ref: ${{ inputs.context }}
       trivy-scanners: ${{ inputs.trivy-scanners }}
       trivy-severity: ${{ inputs.trivy-severity }}
       trivy-ignore-unfixed: ${{ inputs.trivy-ignore-unfixed }}
