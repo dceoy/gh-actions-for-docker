@@ -94,9 +94,9 @@ jobs:
   github-release:
     if: >
       github.event_name == 'workflow_dispatch' && inputs.workflow == 'release'
-    uses: ./.github/workflows/github-release.yml
     permissions:
       contents: write
+    uses: ./.github/workflows/github-release.yml
     with:
       create-new-tag: false
     secrets:
@@ -109,10 +109,10 @@ jobs:
       - github-actions-lint
       - toml-lint
       - docker-lint-and-scan
-    uses: ./.github/workflows/dependabot-auto-merge.yml
     permissions:
       contents: write
       pull-requests: write
+    uses: ./.github/workflows/dependabot-auto-merge.yml
     with:
       unconditional: true
     secrets:

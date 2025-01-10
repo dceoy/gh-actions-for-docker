@@ -94,19 +94,9 @@ jobs:
           tflint_version: latest
       - name: Install Terragrunt
         if: inputs.terragrunt-version != null
-        env:
-          TERRAGRUNT_VERSION: ${{ inputs.terragrunt-version }}
-        run: |
-          arch_type="$(uname -s | tr '[:upper:]' '[:lower:]')_$([[ "$(uname -m)" == 'x86_64' ]] && echo 'amd64' || echo 'arm64')"
-          if [[ "${TERRAGRUNT_VERSION}" == 'latest' ]]; then
-            curl -sSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-              | jq -r ".assets[] | select(.name | endswith(\"${arch_type}\")) | .browser_download_url" \
-              | xargs -t curl -sSL -o /usr/local/bin/terragrunt
-          else
-            curl -sSL -o /usr/local/bin/terragrunt \
-              "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_${arch_type}"
-          fi
-          chmod +x /usr/local/bin/terragrunt
+        uses: dceoy/setup-terragrunt@v1
+        with:
+          terragrunt-version: ${{ inputs.terragrunt-version }}
       - name: Lint the code using terraform fmt
         working-directory: ${{ inputs.search-path }}
         run: |
