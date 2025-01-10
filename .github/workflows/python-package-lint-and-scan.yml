@@ -13,6 +13,11 @@ on:
         type: string
         description: Python version to use
         default: 3.x
+      use-pyright:
+        required: false
+        type: boolean
+        description: Use pyright to check types
+        default: true
       use-mypy:
         required: false
         type: boolean
@@ -106,6 +111,7 @@ jobs:
         run: >
           ${{ env.EXECUTOR }} mypy --install-types --non-interactive .
       - name: Check types using pyright
+        if: inputs.use-pyright
         working-directory: ${{ inputs.package-path }}
         run: >
           ${{ env.EXECUTOR }} pyright --threads=0 .
