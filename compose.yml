@@ -1,11 +1,11 @@
 ---
 services:
-  build-readme-md:
-    container_name: build-readme-md
+  gh-actions-for-devops-readme:
+    container_name: gh-actions-for-devops-readme
     build:
       context: ./src
       dockerfile: Dockerfile
-    image: build-readme-md:latest
+    image: dceoy/gh-actions-for-devops-readme:latest
     network_mode: none
     volumes:
       - ${PWD}:/wd
