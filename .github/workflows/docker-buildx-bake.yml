@@ -36,12 +36,17 @@ on:
       push:
         required: false
         type: boolean
-        description: Push an image to the registry
+        description: Push images to the registry
         default: true
       provenance:
         required: false
         type: boolean
         description: Generate provenance attestation for the build
+        default: false
+      pull-images-if-exist:
+        required: false
+        type: boolean
+        description: Pull images before building
         default: false
       scan-before-build:
         required: false
@@ -51,7 +56,7 @@ on:
       scan-after-build:
         required: false
         type: boolean
-        description: Scan the image after build
+        description: Scan images after build
         default: true
       hadolint-dockerfile:
         required: false
@@ -196,7 +201,25 @@ jobs:
           registry: ${{ inputs.registry }}
           username: ${{ inputs.registry-user }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build an image
+      - name: Pull images if exist
+        if: inputs.pull-images-if-exist
+        id: docker-pull-before-build
+        continue-on-error: true
+        env:
+          DOCKER_BUIDX_BAKE_SOURCE: ${{ inputs.bake-source }}
+          DOCKER_BUIDX_BAKE_FILES: ${{ inputs.bake-files }}
+        run: |
+          if [[ -n "${DOCKER_BUIDX_BAKE_FILES}" ]]; then
+            bake_print="$(docker buildx bake --file "${DOCKER_BUIDX_BAKE_FILES}" --print)"
+          else
+            bake_print="$(cd "${DOCKER_BUIDX_BAKE_SOURCE}" && docker buildx bake --print)"
+          fi
+          jq -r '.target[].tags[]' <<< "${bake_print}" \
+            | xargs -L1 -t docker pull
+          jq -cr '[.target[].tags[]] | "IMAGE_REFS_JSON=\(.)"' <<< "${bake_print}" \
+            | tee -a "${GITHUB_ENV}"
+      - name: Build images
+        if: (! inputs.pull-images-if-exist) || steps.docker-pull-before-build.outcome != 'success'
         id: docker-bake
         uses: docker/bake-action@v6
         with:
@@ -216,16 +239,20 @@ jobs:
         id: extract-image-refs
         env:
           BAKE_OUTPUT_METADATA_JSON: ${{ steps.docker-bake.outputs.metadata }}
-        run: >
-          jq -cr '[.[] | ."image.name"] | "image_refs_json=\(.)"' <<<"${BAKE_OUTPUT_METADATA_JSON}"
-          | tee -a "${GITHUB_OUTPUT}"
-      - name: Pull Docker images
+        run: |
+          if [[ -n "${BAKE_OUTPUT_METADATA_JSON}" ]]; then
+            jq -cr '[.[] | ."image.name"] | "image_refs_json=\(.)"' <<< "${BAKE_OUTPUT_METADATA_JSON}" \
+              | tee -a "${GITHUB_OUTPUT}"
+          else
+            echo "image_refs_json=${IMAGE_REFS_JSON}" | tee -a "${GITHUB_OUTPUT}"
+          fi
+      - name: Pull the images
         if: inputs.push
         env:
           IMAGE_REFS_JSON: ${{ steps.extract-image-refs.outputs.image_refs_json }}
         run: >
           jq -r '.[]' <<<"${IMAGE_REFS_JSON}" | xargs -L1 -t docker pull
-      - name: Save the image as a tarball
+      - name: Save the images as a tarball
         env:
           IMAGE_REFS_JSON: ${{ steps.extract-image-refs.outputs.image_refs_json }}
         run: >
