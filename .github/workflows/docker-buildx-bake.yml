@@ -43,6 +43,16 @@ on:
         type: boolean
         description: Generate provenance attestation for the build
         default: false
+      environment-variables:
+        required: false
+        type: string
+        description: Environment variables to set (e.g., "FOO=bar")
+        default: null
+      environment-file:
+        required: false
+        type: string
+        description: Environment file to set environment variables
+        default: null
       pull-images-if-exist:
         required: false
         type: boolean
@@ -190,6 +200,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set environment variables from key-value pairs
+        if: inputs.environment-variables != null
+        env:
+          ENVIRONMENT_VARIABLES: ${{ inputs.environment-variables }}
+        run: |
+          echo "${ENVIRONMENT_VARIABLES}" >> "${GITHUB_ENV}"
+      - name: Set environment variables from file
+        if: inputs.environment-file != null
+        env:
+          ENVIRONMENT_FILE: ${{ inputs.environment-file }}
+        run: |
+          cat "${ENVIRONMENT_FILE}" >> "${GITHUB_ENV}"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
