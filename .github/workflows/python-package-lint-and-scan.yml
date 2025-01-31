@@ -38,6 +38,11 @@ on:
         type: string
         description: Additional Python packages to install
         default: null
+      requirements-txt:
+        required: false
+        type: string
+        description: Path to the requirements.txt file
+        default: null
       runs-on:
         required: false
         type: string
@@ -61,16 +66,22 @@ jobs:
         env:
           POETRY_HOME: /opt/poetry
           ADDITIONAL_PYTHON_PACKAGES: ${{ inputs.additional-python-packages }}
+          REQUIREMENTS_TXT_PATH: ${{ inputs.requirements-txt }}
         working-directory: ${{ inputs.package-path }}
         run: |
+          pip install -U --no-cache-dir pip
+          if [[ -n "${REQUIREMENTS_TXT_PATH}" ]]; then
+            pip install -U --no-cache-dir -r "${REQUIREMENTS_TXT_PATH}"
+          fi
           if [[ -f poetry.lock ]]; then
-            pip install -U --no-cache-dir poetry
+            pip install --no-cache-dir poetry
             poetry lock --no-interaction
             poetry add --group=dev --no-interaction \
               ${{ inputs.use-flake8 && 'flake8' || '' }} \
               ${{ inputs.use-bandit && 'bandit' || '' }} \
               ${{ inputs.use-mypy && 'mypy' || '' }} \
-              ruff pyright
+              ${{ inputs.use-pyright && 'pyright' || '' }} \
+              ruff
             for p in $(echo "${ADDITIONAL_PYTHON_PACKAGES}" | tr ' ' '\n'); do
               if [[ -n "${p}" ]]; then
                 poetry add --group=dev --no-interaction "${p}"
@@ -79,14 +90,15 @@ jobs:
             poetry install --no-interaction --no-root
             echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
-            pip install -U --no-cache-dir \
+            pip install --no-cache-dir \
               ${{ inputs.use-flake8 && 'flake8' || '' }} \
               ${{ inputs.use-bandit && 'bandit' || '' }} \
               ${{ inputs.use-mypy && 'mypy' || '' }} \
-              ruff pyright
+              ${{ inputs.use-pyright && 'pyright' || '' }} \
+              ruff
             for p in $(echo "${ADDITIONAL_PYTHON_PACKAGES}" | tr ' ' '\n'); do
               if [[ -n "${p}" ]]; then
-                pip install -U --no-cache-dir "${p}"
+                pip install --no-cache-dir "${p}"
               fi
             done
             echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"

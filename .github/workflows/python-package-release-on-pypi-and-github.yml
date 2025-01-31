@@ -23,6 +23,11 @@ on:
         type: string
         description: Python version to use
         default: 3.x
+      requirements-txt:
+        required: false
+        type: string
+        description: Path to the requirements.txt file
+        default: null
       artifact-retention-days:
         required: false
         type: number
@@ -81,13 +86,19 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               print(f"project_name={name}", file=f)
       - name: Build a binary wheel and a source tarball
+        env:
+          REQUIREMENTS_TXT_PATH: ${{ inputs.requirements-txt }}
         working-directory: ${{ inputs.package-path }}
         run: |
+          pip install -U --no-cache-dir pip
+          if [[ -n "${REQUIREMENTS_TXT_PATH}" ]]; then
+            pip install -U --no-cache-dir -r "${REQUIREMENTS_TXT_PATH}"
+          fi
           if [[ -f poetry.lock ]]; then
-            python3 -m pip install -U --no-cache-dir poetry
+            python3 -m pip install --no-cache-dir poetry
             python3 -m poetry build --format=wheel --no-interaction
           else
-            python3 -m pip install -U --no-cache-dir build
+            python3 -m pip install --no-cache-dir build
             python3 -m build
           fi
           mv dist /tmp/${{ steps.read-project-name.outputs.project_name }}_dist

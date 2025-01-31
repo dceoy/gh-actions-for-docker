@@ -7,21 +7,16 @@ on:
         required: true
         type: string
         description: Path to a Python script
-      python-packages-to-install:
-        required: false
-        type: string
-        description: Python packages to install
-        default: null
-      runs-on:
-        required: false
-        type: string
-        description: Type of machine to run the job on
-        default: windows-latest
       python-version:
         required: false
         type: string
         description: Python version to use
         default: 3.x
+      requirements-txt:
+        required: false
+        type: string
+        description: Path to the requirements.txt file
+        default: null
       artifact-name:
         required: false
         type: string
@@ -42,6 +37,11 @@ on:
         type: boolean
         description: Overwrite existing artifacts
         default: true
+      runs-on:
+        required: false
+        type: string
+        description: Type of machine to run the job on
+        default: windows-latest
 defaults:
   run:
     shell: bash -euo pipefail {0}
@@ -56,15 +56,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Install PyInstaller
-        run: >
-          python -m pip install -U --no-cache-dir pip PyInstaller
-      - name: Install Python packages
-        if: inputs.python-packages-to-install != null
+      - name: Install packages
         env:
-          PYTHON_PACHAGES_TO_INSTALL: ${{ inputs.python-packages-to-install }}
-        run: >
-          python -m pip install -U --no-cache-dir "${PYTHON_PACHAGES_TO_INSTALL}"
+          REQUIREMENTS_TXT_PATH: ${{ inputs.requirements-txt }}
+        run: |
+          python -m pip install -U --no-cache-dir pip
+          if [[ -n "${REQUIREMENTS_TXT_PATH}" ]]; then
+            python -m pip install -U --no-cache-dir -r "${REQUIREMENTS_TXT_PATH}"
+          fi
+          python -m pip install --no-cache-dir PyInstaller
       - name: Build an executable file
         env:
           APP_SCRIPT_PATH: ${{ inputs.app-script-path }}

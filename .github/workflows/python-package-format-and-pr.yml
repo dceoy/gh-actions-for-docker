@@ -28,6 +28,11 @@ on:
         type: boolean
         description: Run lint before creating a pull request
         default: true
+      requirements-txt:
+        required: false
+        type: string
+        description: Path to the requirements.txt file
+        default: null
       runs-on:
         required: false
         type: string
@@ -57,10 +62,15 @@ jobs:
       - name: Install packages
         env:
           POETRY_HOME: /opt/poetry
+          REQUIREMENTS_TXT_PATH: ${{ inputs.requirements-txt }}
         working-directory: ${{ inputs.package-path }}
-        run: >
+        run: |
+          pip install -U --no-cache-dir pip
+          if [[ -n "${REQUIREMENTS_TXT_PATH}" ]]; then
+            pip install -U --no-cache-dir -r "${REQUIREMENTS_TXT_PATH}"
+          fi
           if [[ -f poetry.lock ]]; then
-            pip install -U --no-cache-dir poetry
+            pip install --no-cache-dir poetry
             poetry lock --no-interaction
             poetry add --group=dev --no-interaction \
               ${{ inputs.use-black && 'black' || 'ruff' }} \
@@ -68,7 +78,7 @@ jobs:
             poetry install --no-interaction
             echo "EXECUTOR=poetry run -C ${PWD}" | tee -a "${GITHUB_ENV}"
           else
-            pip install -U --no-cache-dir \
+            pip install --no-cache-dir \
               ${{ inputs.use-black && 'black' || 'ruff' }} \
               ${{ inputs.use-isort && 'isort' || '' }}
             echo "EXECUTOR=" | tee -a "${GITHUB_ENV}"
