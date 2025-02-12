@@ -105,7 +105,7 @@ jobs:
         if: inputs.terragrunt-version != null
         working-directory: ${{ inputs.search-path }}
         run: >
-          terragrunt hclfmt --terragrunt-check --terragrunt-diff
+          terragrunt hclfmt --check --diff
       - name: Lint the code using tflint
         if: inputs.use-tflint
         working-directory: ${{ inputs.search-path }}

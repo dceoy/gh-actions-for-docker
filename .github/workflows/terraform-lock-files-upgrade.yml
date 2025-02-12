@@ -75,7 +75,7 @@ jobs:
           TERRAGRUNT_WORKING_DIRECTORIES: ${{ inputs.terragrunt-working-directories }}
           TERRAFORM_WORKING_DIRECTORIES: ${{ inputs.terraform-working-directories }}
           TERRAFORM_INIT: terraform init -backend=false -upgrade -reconfigure && rm -rf .terraform
-          TERRAGRUNT_INIT: terragrunt init --terragrunt-non-interactive -backend=false -upgrade -reconfigure && rm -rf .terragrunt-cache
+          TERRAGRUNT_INIT: terragrunt init --non-interactive -backend=false -upgrade -reconfigure && rm -rf .terragrunt-cache
         run: |
           if [[ -n "${TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON}" ]]; then
             echo "${TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON}" \
@@ -114,7 +114,7 @@ jobs:
           TERRAGRUNT_WORKING_DIRECTORIES: ${{ inputs.terragrunt-working-directories }}
           TERRAFORM_WORKING_DIRECTORIES: ${{ inputs.terraform-working-directories }}
           TERRAFORM_VALIDATE: terraform init -backend=false && terraform validate && rm -rf .terraform
-          TERRAGRUNT_VALIDATE: terragrunt init --terragrunt-non-interactive -backend=false && terragrunt validate && rm -rf .terragrunt-cache
+          TERRAGRUNT_VALIDATE: terragrunt init --non-interactive -backend=false && terragrunt validate && rm -rf .terragrunt-cache
         run: |
           if [[ -n "${TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON}" ]]; then
             echo "${TERRAFORM_WORKING_DIRECTORY_TO_VERSION_TF_JSON}" \

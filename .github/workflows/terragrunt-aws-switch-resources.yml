@@ -109,11 +109,11 @@ jobs:
           AWS_EC2_COMMAND: ${{ inputs.start && 'start-instances' || 'stop-instances' }}
         run: |
           if (! ${{ inputs.start }}) && ${{ inputs.terminate }}; then
-            terragrunt destroy --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
+            terragrunt destroy --working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
           else
             ec2_instance_ids_txt="$(mktemp)"
             {
-              terragrunt output --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" \
+              terragrunt output --working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" \
                 | grep -e '_ec2_instance_id = ' \
                 | grep -oe 'i-[0-9a-z]\+' \
                 || :
@@ -121,7 +121,7 @@ jobs:
             if [[ -s "${ec2_instance_ids_txt}" ]]; then
               xargs -t aws ec2 "${AWS_EC2_COMMAND}" --instance-ids < "${ec2_instance_ids_txt}"
             elif ${{ inputs.start }}; then
-              terragrunt apply --terragrunt-working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
+              terragrunt apply --working-dir="${TERRAGRUNT_TARGET_EC2_DIRECTORY}" -auto-approve
             fi
           fi
       - name: Create or destroy target resources
@@ -131,4 +131,4 @@ jobs:
           TERRAGRUNT_TARGET_RESOURCE_DIRECTORIES: ${{ inputs.terragrunt-target-resource-directories }}
         run: |
           echo "${TERRAGRUNT_TARGET_RESOURCE_DIRECTORIES}" \
-            | xargs -I{} -t terragrunt "${TERRAGRUNT_COMMAND}" --terragrunt-working-dir='{}' -auto-approve
+            | xargs -I{} -t terragrunt "${TERRAGRUNT_COMMAND}" --working-dir='{}' -auto-approve

@@ -68,7 +68,7 @@ jobs:
         env:
           SEARCH_PATH: ${{ inputs.search-path }}
         run: |
-          terragrunt hclfmt --terragrunt-diff --terragrunt-working-dir="${SEARCH_PATH}"
+          terragrunt hclfmt --diff --working-dir="${SEARCH_PATH}"
       - name: Lint the code using TFLint
         if: inputs.lint-before-pr
         env:
